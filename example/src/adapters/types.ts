@@ -10,9 +10,9 @@ export type EventPayload<
   Event extends EventName<Map> = EventName<Map>,
 > = Map[Event] extends unknown[]
   ? {
-      eventName: Event;
-      payload: Map[Event];
-    }
+    eventName: Event;
+    payload: Map[Event];
+  }
   : never;
 
 export type EventListener<
@@ -35,3 +35,12 @@ export type ApiPayload<
   Map extends ApiMap = ApiMap,
   ApiFn extends ApiName<Map> = ApiName<Map>,
 > = Map[ApiFn] extends (...args: unknown[]) => void ? Map[ApiFn] : never;
+
+export interface ApiCallMessage<
+  Map extends ApiMap = ApiMap,
+  ApiFn extends ApiName<Map> = ApiName<Map>,
+> {
+  apiCall: ApiFn;
+  parameters: Parameters<ApiPayload<Map, ApiFn>>;
+  id: number;
+}

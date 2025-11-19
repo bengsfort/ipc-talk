@@ -1,3 +1,8 @@
+import {
+  createPromiseWithResolvers,
+  type PromiseWithResolvers,
+} from "../utils";
+
 import type {
   EventListenerMap,
   EventMap,
@@ -7,6 +12,7 @@ import type {
   ApiName,
   ApiPayload,
   EventPayload,
+  ApiCallMessage,
 } from "./types";
 
 interface WorkerEventEmitter<Events extends EventMap> {
@@ -74,13 +80,23 @@ type PromiseResolver<T> = (value: T) => void;
 export function workerWithApi<API extends ApiMap>(
   worker: Worker,
 ): WorkerApiProvider<API> {
-  const resolvers = new Map<number, PromiseResolver<unknown>>();
+  const promises = new Map<number, PromiseWithResolvers<unknown>>();
 
   let idCounter = 0;
-  
+
   return {
     invoke(fnName, ...args) {
-      
+      const promise = createPromiseWithResolvers<unknown>();
+      const promiseId = idCounter++;
+
+      const msg: ApiCallMessage = {
+        apiCall: fnName,
+        parameters: args,
+        id: promiseId,
+      };
+
+      worker.postMessage(JSON.stringify(msg));
+      return promise;
     },
-  }
+  };
 }
