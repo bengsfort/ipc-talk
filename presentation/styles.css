@@ -1,0 +1,32 @@
+.process-visual {
+  display: flex;
+  gap: 16px;
+
+  &-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    block-size: 200px;
+    inline-size: 200px;
+    gap: 8px;
+  }
+
+  .speech-bubble {
+    position: absolute;
+    inset-block-end: 80%;
+    inset-inline-start: 80%;
+    inline-size: 100%;
+    max-inline-size: 225px;
+    background-color: white;
+    color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 4px;
+    border-radius: 16px;
+    rotate: 15deg;
+  }
+}
