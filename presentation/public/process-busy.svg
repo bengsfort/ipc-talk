@@ -1,0 +1,18 @@
+<svg width="140" height="110" viewBox="0 0 140 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="path-1-inside-1_12_103" fill="white">
+<path d="M0 3C0 1.34314 1.34315 0 3 0H137C138.657 0 140 1.34315 140 3V109C140 109.552 139.552 110 139 110H0.999998C0.447713 110 0 109.552 0 109V3Z"/>
+</mask>
+<path d="M0 3C0 1.34314 1.34315 0 3 0H137C138.657 0 140 1.34315 140 3V109C140 109.552 139.552 110 139 110H0.999998C0.447713 110 0 109.552 0 109V3Z" fill="#292633" stroke="#B2BDC7" stroke-width="8" mask="url(#path-1-inside-1_12_103)"/>
+<rect x="2" y="2" width="136" height="11" fill="#B2BDC7"/>
+<circle cx="7.5" cy="7.5" r="2.5" fill="#ED5D5D"/>
+<circle cx="14.5" cy="7.5" r="2.5" fill="#FBD880"/>
+<circle cx="21.5" cy="7.5" r="2.5" fill="#A8F49D"/>
+<rect x="8" y="19" width="124" height="6" fill="#ED5D5D"/>
+<rect x="8" y="29" width="124" height="6" fill="white"/>
+<rect x="8" y="39" width="124" height="6" fill="white"/>
+<rect x="8" y="49" width="124" height="6" fill="white"/>
+<rect x="8" y="59" width="124" height="6" fill="white"/>
+<rect x="8" y="69" width="124" height="6" fill="white"/>
+<rect x="8" y="79" width="124" height="6" fill="white"/>
+<rect x="8" y="89" width="124" height="6" fill="white"/>
+</svg>

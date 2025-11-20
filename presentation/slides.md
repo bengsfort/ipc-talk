@@ -40,7 +40,7 @@ layout: center
     :click-1="{ y: 0 }"
     :click-2="{ x: 0 }"
   >
-    <img alt="Node.js process image" src="/process-icon.svg" />
+    <img alt="Node.js process image" src="/process.svg" />
     Node.js process
   </div>
 
@@ -51,7 +51,7 @@ layout: center
     :initial="{ x: -25, y: 0 }"
     :click-2="{ x: 0 }"
   >
-    <img alt="Hard-working subprocess image" src="/full-process-icon.svg" />
+    <img alt="Hard-working subprocess image" src="/process-busy.svg" />
     Hard-working subprocess
 
   <div class="speech-bubble" v-click="3">
@@ -81,7 +81,7 @@ layout: center
     :click-1="{ y: 0 }"
     :click-2="{ x: 0 }"
   >
-    <img alt="Browser image" src="/browser-icon.svg" />
+    <img alt="Browser image" src="/browser.svg" />
     Browser
   </div>
 
@@ -92,7 +92,7 @@ layout: center
     :initial="{ x: -25, y: 0 }"
     :click-2="{ x: 0 }"
   >
-    <img alt="Web Worker image" src="/full-process-icon.svg" />
+    <img alt="Web Worker image" src="/process-busy.svg" />
     Web Worker
   </div>
 </div>
@@ -118,7 +118,7 @@ layout: center
     :click-1="{ x: 100, y: 0 }"
     :click-2="{ x: 0 }"
   >
-    <img alt="Browser image" src="/browser-icon.svg" />
+    <img alt="Browser image" src="/browser.svg" />
     Render Process
   </div>
 
@@ -130,7 +130,7 @@ layout: center
     :click-1="{ x: 100, y: 0 }"
     :click-2="{ x: 0 }"
   >
-    <img alt="Web Worker image" src="/process-icon.svg" />
+    <img alt="Web Worker image" src="/process.svg" />
     Electron Main Process
   </div>
 
@@ -141,7 +141,7 @@ layout: center
     :initial="{ x: -25, y: 0 }"
     :click-2="{ x: 0 }"
   >
-    <img alt="Web Worker image" src="/process-icon.svg" />
+    <img alt="Web Worker image" src="/process-busy.svg" />
     Node.js subprocess
   </div>
 </div>

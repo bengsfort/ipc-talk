@@ -1,0 +1,19 @@
+<svg width="140" height="110" viewBox="0 0 140 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="path-1-inside-1_9_47" fill="white">
+<rect width="140" height="110" rx="3"/>
+</mask>
+<rect width="140" height="110" rx="3" fill="white" stroke="#B2BDC7" stroke-width="8" mask="url(#path-1-inside-1_9_47)"/>
+<rect x="2" y="2" width="136" height="11" fill="#B2BDC7"/>
+<path d="M26 7C26 5.34315 27.3431 4 29 4H49C50.6569 4 52 5.34315 52 7V13H26V7Z" fill="#8B9BA9"/>
+<circle cx="6.5" cy="7.5" r="2.5" fill="#ED5D5D"/>
+<circle cx="13.5" cy="7.5" r="2.5" fill="#FBD880"/>
+<circle cx="20.5" cy="7.5" r="2.5" fill="#A8F49D"/>
+<rect x="42" y="39" width="56" height="6" fill="#252422"/>
+<path d="M126 18C126 16.8954 126.895 16 128 16H130C131.105 16 132 16.8954 132 18V20C132 21.1046 131.105 22 130 22H128C126.895 22 126 21.1046 126 20V18Z" fill="#252422"/>
+<rect x="113" y="17" width="9" height="4" fill="#403F3D"/>
+<rect x="101" y="17" width="9" height="4" fill="#403F3D"/>
+<rect x="30" y="49" width="80" height="3" fill="#403F3D"/>
+<rect x="34" y="53" width="74" height="3" fill="#403F3D"/>
+<rect x="71" y="65" width="20" height="7" rx="3" fill="#5D5FE7"/>
+<rect x="48.5" y="65.5" width="19" height="6" rx="2.5" stroke="#5D5FE7"/>
+</svg>
