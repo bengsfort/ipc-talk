@@ -1,6 +1,7 @@
 .process-visual {
   display: flex;
   gap: 16px;
+  position: relative;
 
   &-item {
     position: relative;
@@ -13,20 +14,9 @@
     gap: 8px;
   }
 
-  .speech-bubble {
+  .data-block {
     position: absolute;
-    inset-block-end: 80%;
-    inset-inline-start: 80%;
-    inline-size: 100%;
-    max-inline-size: 225px;
-    background-color: white;
-    color: black;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 4px;
-    border-radius: 16px;
-    rotate: 15deg;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
   }
 }

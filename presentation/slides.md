@@ -32,6 +32,7 @@ layout: center
   :enter="{ opacity: 1 }"
   :leave="{ opacity: 0 }"
 >
+
   <div
     class="process-visual-item"
     v-click="1"
@@ -41,7 +42,7 @@ layout: center
     :click-2="{ x: 0 }"
   >
     <img alt="Node.js process image" src="/process.svg" />
-    Node.js process
+    Node.js
   </div>
 
   <div
@@ -51,13 +52,17 @@ layout: center
     :initial="{ x: -25, y: 0 }"
     :click-2="{ x: 0 }"
   >
-    <img alt="Hard-working subprocess image" src="/process-busy.svg" />
-    Hard-working subprocess
+    <img alt="Busy node.js process image" src="/process-busy.svg" />
+    Hard working subprocess
+  </div>
 
-  <div class="speech-bubble" v-click="3">
-    All done!<br />Here's your data!
-  </div>
-  </div>
+  <FlyingData
+    class="data-block"
+    v-click="3"
+    :startPos="{ x: 75, y: -20 }"
+    :endPos="{ x: -75 }"
+  />
+
 </div>
 
 ---
@@ -95,6 +100,13 @@ layout: center
     <img alt="Web Worker image" src="/process-busy.svg" />
     Web Worker
   </div>
+
+  <FlyingData
+    class="data-block"
+    v-click="3"
+    :startPos="{ x: 75, y: -20 }"
+    :endPos="{ x: -75 }"
+  />
 </div>
 
 ---
@@ -102,7 +114,7 @@ transition: fade
 layout: center
 ---
 
-<h1 class="text-center">What even is IPC?</h1>
+<h1 class="text-center">Electron</h1>
 
 <div
   class="process-visual"
@@ -112,11 +124,9 @@ layout: center
 >
   <div
     class="process-visual-item"
-    v-click="1"
     v-motion
-    :initial="{ x: 100, y: 50 }"
-    :click-1="{ x: 100, y: 0 }"
-    :click-2="{ x: 0 }"
+    :initial="{ x: 0, y: 50 }"
+    :enter="{ x: 0, y: 0 }"
   >
     <img alt="Browser image" src="/browser.svg" />
     Render Process
@@ -124,27 +134,35 @@ layout: center
 
   <div
     class="process-visual-item"
-    v-click="1"
     v-motion
-    :initial="{ x: 100, y: 50 }"
-    :click-1="{ x: 100, y: 0 }"
-    :click-2="{ x: 0 }"
+    :initial="{ x: 0, y: 50 }"
+    :enter="{ x: 0, y: 0 }"
   >
     <img alt="Web Worker image" src="/process.svg" />
     Electron Main Process
   </div>
 
-  <div
-    class="process-visual-item"
-    v-click="2"
-    v-motion
-    :initial="{ x: -25, y: 0 }"
-    :click-2="{ x: 0 }"
-  >
-    <img alt="Web Worker image" src="/process-busy.svg" />
-    Node.js subprocess
-  </div>
+  <FlyingData
+    class="data-block"
+    v-click="1"
+    :startPos="{ x: 75, y: -20 }"
+    :endPos="{ x: -75 }"
+    :delay="3000"
+  />
+  <FlyingData
+    class="data-block"
+    v-click="1"
+    :startPos="{ x: -75, y: -40 }"
+    :endPos="{ x: 75 }"
+    :delay="3000"
+  />
 </div>
+
+---
+transition: fade
+layout: image
+image: /data.jpg
+---
 
 ---
 transition: fade-out
