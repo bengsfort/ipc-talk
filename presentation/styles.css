@@ -20,3 +20,46 @@
     inset-inline-start: 50%;
   }
 }
+
+.code-block-header {
+  position: relative;
+  inline-size: 100%;
+  padding: 2px 16px;
+  text-align:center;
+  border-radius: 0;
+  border-start-start-radius: 6px;
+  border-start-end-radius: 6px;
+  background: #292633;
+  color: #82789e;
+  font-size: 11px;
+
+  &::before,
+  &::after {
+    --_button-size: 10px;
+    --_button-viz: #ED5D5D;
+    --_x-offset: 5px;
+
+    content: '';
+    position: absolute;
+    inset-block-start: 5px;
+    inset-inline-start: var(--_x-offset);
+    block-size: var(--_button-size);
+    inline-size: var(--_button-size);
+    background-color: var(--_button-viz);
+    border-radius: 100%;
+  }
+
+  &::after {
+    --_button-viz: #A8F49D;
+    --_x-offset: calc(var(--_button-size) + 10px);
+  }
+
+  & + .slidev-code-wrapper {
+    margin-top: 0 !important;
+
+    & > pre {
+      border-start-start-radius: 0 !important;
+      border-start-end-radius: 0 !important;
+    }
+  }
+}

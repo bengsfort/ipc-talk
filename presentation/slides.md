@@ -24,7 +24,7 @@ transition: fade
 layout: center
 ---
 
-<h1 class="text-center">What even is IPC?</h1>
+<h1 class="text-center">What is IPC in Node?</h1>
 
 <div
   class="process-visual"
@@ -67,10 +67,66 @@ layout: center
 
 ---
 transition: fade
+layout: two-code-blocks
+---
+
+# Node IPC
+
+::left::
+
+<div class="code-block-header font-mono">
+  main.ts
+</div>
+
+```ts
+import { fork } from 'node:child_process';
+
+// Create a sub-process for the heavy task.
+const taskProcess = fork('./do-heavy-task.js');
+
+// Add a listener for the result of the task.
+taskProcess.on('message', (message) => {
+  console.log(
+    'Task process finished work',
+    message.result
+  );
+});
+
+// Send a message to the sub-process to start the task.
+taskProcess.send({
+  fileToProcess: './some-big-file.txt'
+});
+```
+
+::right::
+
+<div class="code-block-header font-mono">
+  do-heavy-task.ts
+</div>
+
+```ts
+function processFile(file: string): any {
+  // ...
+}
+
+// Listen for a message from the main process.
+process.on('message', (message) => {
+  // Do some very serious and heavy processing.
+  const result = processFile(message.fileToProcess);
+
+  // Send the result back to the main process.
+  process.send({
+    result,
+  });
+});
+```
+
+---
+transition: fade
 layout: center
 ---
 
-<h1 class="text-center">What even is IPC?</h1>
+<h1 class="text-center">What about on web?</h1>
 
 <div
   class="process-visual"
@@ -108,6 +164,54 @@ layout: center
     :endPos="{ x: -75 }"
   />
 </div>
+
+---
+transition: fade
+layout: two-code-blocks
+---
+
+# Web Workers
+
+::left::
+
+<div class="code-block-header font-mono">
+  app.ts
+</div>
+
+```ts
+const resultEl = getElementById('result-label');
+const buttonEl = getElementById('calculate-button');
+
+// Create the worker.
+const worker = new Worker('add.js');
+
+// Add a listener for the message containing the result.
+worker.onmessage = (event) => {
+  resultEl.innerText = `Result: ${event.data}`;
+};
+
+// Send a message to the worker to initialize the work.
+buttonEl.addEventListener('click', (ev) => {
+  worker.postMessage({ x: 50, y: 100 });
+});
+```
+
+::right::
+
+<div class="code-block-header font-mono">
+  add.ts
+</div>
+
+```ts
+// Listen for a message from the main process.
+onmessage = (event) => {
+  // Do some serious work.
+  const result = event.x + event.y;
+
+  // Send the result back to the main thread.
+  postMessage(result);
+});
+```
 
 ---
 transition: fade
