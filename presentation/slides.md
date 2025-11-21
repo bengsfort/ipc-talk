@@ -11,7 +11,7 @@ duration: 35min
 
 # Making IPC Less Painful
 
-Utilizing Typescript to make inter-process communication (IPC) less of a headache
+Utilizing Typescript to make Inter-process communication (IPC) less of a headache
 
 <div class="abs-br m-6 text-xl">
   <a href="https://github.com/bengsfort/ipc-talk" target="_blank" class="slidev-icon-btn">
@@ -21,10 +21,21 @@ Utilizing Typescript to make inter-process communication (IPC) less of a headach
 
 ---
 transition: fade
+layout: quote
+---
+
+<h1 class="text-center">Inter-process communication is sending data between multiple javascript instances.</h1>
+
+---
+transition: fade
 layout: center
 ---
 
-<h1 class="text-center">What is IPC in Node?</h1>
+<h1 class="text-center">Available to a javascript near you!</h1>
+
+<div v-click="1" class="text-center">
+Usable in Node.js via Child Processes and Worker Threads
+</div>
 
 <div
   class="process-visual"
@@ -35,7 +46,7 @@ layout: center
 
   <div
     class="process-visual-item"
-    v-click="1"
+    v-click="2"
     v-motion
     :initial="{ x: 100, y: 50 }"
     :click-1="{ y: 0 }"
@@ -47,7 +58,7 @@ layout: center
 
   <div
     class="process-visual-item"
-    v-click="2"
+    v-click="3"
     v-motion
     :initial="{ x: -25, y: 0 }"
     :click-2="{ x: 0 }"
@@ -58,11 +69,53 @@ layout: center
 
   <FlyingData
     class="data-block"
-    v-click="3"
-    :startPos="{ x: 75, y: -20 }"
-    :endPos="{ x: -75 }"
+    v-click="4"
+    :startPos="{ x: 90, y: -25 }"
+    :endPos="{ x: -100, y: -25 }"
   />
 
+</div>
+
+<div v-click="5" class="text-center">
+Usable in browsers via the Worker API (Web Workers, Shared workers, etc)
+</div>
+
+<div
+  class="process-visual"
+  v-click="5"
+  v-motion
+  :enter="{ opacity: 1 }"
+  :leave="{ opacity: 0 }"
+>
+  <div
+    class="process-visual-item"
+    v-click="6"
+    v-motion
+    :initial="{ x: 100, y: 50 }"
+    :click-1="{ y: 0 }"
+    :click-2="{ x: 0 }"
+  >
+    <img alt="Browser image" src="/browser.svg" />
+    Browser
+  </div>
+
+  <div
+    class="process-visual-item"
+    v-click="7"
+    v-motion
+    :initial="{ x: -25, y: 0 }"
+    :click-2="{ x: 0 }"
+  >
+    <img alt="Web Worker image" src="/process-busy.svg" />
+    Web Worker
+  </div>
+
+  <FlyingData
+    class="data-block"
+    v-click="8"
+    :startPos="{ x: 90, y: -25 }"
+    :endPos="{ x: -100, y: -25 }"
+  />
 </div>
 
 ---
@@ -70,10 +123,11 @@ transition: fade
 layout: two-code-blocks
 ---
 
-# Node IPC
+# IPC in Node.js
 
 ::left::
 
+<div v-click="1">
 <div class="code-block-header font-mono">
   main.ts
 </div>
@@ -98,7 +152,11 @@ taskProcess.send({
 });
 ```
 
+</div>
+
 ::right::
+
+<div v-click="2">
 
 <div class="code-block-header font-mono">
   do-heavy-task.ts
@@ -121,48 +179,6 @@ process.on('message', (message) => {
 });
 ```
 
----
-transition: fade
-layout: center
----
-
-<h1 class="text-center">What about on web?</h1>
-
-<div
-  class="process-visual"
-  v-motion
-  :enter="{ opacity: 1 }"
-  :leave="{ opacity: 0 }"
->
-  <div
-    class="process-visual-item"
-    v-click="1"
-    v-motion
-    :initial="{ x: 100, y: 50 }"
-    :click-1="{ y: 0 }"
-    :click-2="{ x: 0 }"
-  >
-    <img alt="Browser image" src="/browser.svg" />
-    Browser
-  </div>
-
-  <div
-    class="process-visual-item"
-    v-click="2"
-    v-motion
-    :initial="{ x: -25, y: 0 }"
-    :click-2="{ x: 0 }"
-  >
-    <img alt="Web Worker image" src="/process-busy.svg" />
-    Web Worker
-  </div>
-
-  <FlyingData
-    class="data-block"
-    v-click="3"
-    :startPos="{ x: 75, y: -20 }"
-    :endPos="{ x: -75 }"
-  />
 </div>
 
 ---
@@ -170,10 +186,11 @@ transition: fade
 layout: two-code-blocks
 ---
 
-# Web Workers
+# IPC in Web
 
 ::left::
 
+<div v-click="1">
 <div class="code-block-header font-mono">
   app.ts
 </div>
@@ -195,9 +212,11 @@ buttonEl.addEventListener('click', (ev) => {
   worker.postMessage({ x: 50, y: 100 });
 });
 ```
+</div>
 
 ::right::
 
+<div v-click="2">
 <div class="code-block-header font-mono">
   add.ts
 </div>
@@ -210,8 +229,43 @@ onmessage = (event) => {
 
   // Send the result back to the main thread.
   postMessage(result);
-});
+};
 ```
+</div>
+
+<!--
+It might be good here to pivot to the problems, and show each problem in a growing
+list which can then be ticked off one by one. Like iteration.
+-->
+
+---
+transition: fade
+layout: default
+---
+
+# What do these have in common?
+
+- Examples with the magic thing to show they are just event emitters
+
+---
+transition: fade
+layout: default
+---
+
+# IPC gets complex very quickly
+
+- What happens if one of processes errors?
+- How do you handle setup and cleanup effectively?
+- What if you need to support multiple messages, not just one?
+  - Add example?
+- Using the other process like an API is clunky due to the event-based nature
+
+---
+transition: fade
+layout: center
+---
+
+# How can we improve this?
 
 ---
 transition: fade
