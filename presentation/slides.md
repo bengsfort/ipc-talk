@@ -340,29 +340,23 @@ _Problems with IPC in practice_
 <v-click>
 
 ````md magic-move
-```ts {*|3}
+```ts {*|12}
+// Client
+worker.addListener('message', ({ data }) => {
+  if (data.type === 'processed-file') {
+    doSomethingWithString(data.value);
+  } else if (data.type === 'processing-duration') {
+    doSomethingWithNumber(data.value);
+  }
+});
+
 // Worker
 postMessage({
   type: 'procesed-file',
   value: 'pretend this is a file or something',
 });
-
-// Client
-worker.addListener('message', ({ data }) => {
-  if (data.type === 'processed-file') {
-    doSomethingWithString(data.value);
-  } else if (data.type === 'processing-duration') {
-    doSomethingWithNumber(data.value);
-  }
-});
 ```
 ```ts
-// Worker
-postMessage({
-  type: 'processed-file',
-  value: 'pretend this is a file or something',
-});
-
 // Client
 worker.addListener('message', ({ data }) => {
   if (data.type === 'processed-file') {
@@ -371,14 +365,14 @@ worker.addListener('message', ({ data }) => {
     doSomethingWithNumber(data.value);
   }
 });
-```
-```ts {9}
+
 // Worker
 postMessage({
   type: 'processed-file',
   value: 'pretend this is a file or something',
 });
-
+```
+```ts {3}
 // Client
 worker.addListener('message', ({ data }) => {
   if (data.type === 'procesed-file') {
@@ -387,14 +381,14 @@ worker.addListener('message', ({ data }) => {
     doSomethingWithNumber(data.value);
   }
 });
-```
-```ts
+
 // Worker
 postMessage({
   type: 'processed-file',
   value: 'pretend this is a file or something',
 });
-
+```
+```ts
 // Client
 worker.addListener('message', ({ data }) => {
   if (data.type === 'processed-file') {
@@ -402,6 +396,12 @@ worker.addListener('message', ({ data }) => {
   } else if (data.type === 'processing-duration') {
     doSomethingWithNumber(data.value);
   }
+});
+
+// Worker
+postMessage({
+  type: 'processed-file',
+  value: 'pretend this is a file or something',
 });
 ```
 ````
@@ -418,11 +418,28 @@ _Problems with IPC in practice_
 
 ````md magic-move
 ```ts
+// Client
+worker.addListener('message', ({ data }) => {
+  if (data.type === 'processed-file') {
+    doSomethingWithString(data.value);
+  } else if (data.type === 'processing-duration') {
+    doSomethingWithNumber(data.value);
+  }
+});
+
 // Worker
 postMessage({
   type: 'processed-file',
   value: 'pretend this is a file or something',
 });
+```
+
+```ts
+// Enum
+const MessageTypes = {
+  ProcessedFile: 'processed-file',
+  ProcessingDuration: 'processing-duration',
+} as const;
 
 // Client
 worker.addListener('message', ({ data }) => {
@@ -432,43 +449,20 @@ worker.addListener('message', ({ data }) => {
     doSomethingWithNumber(data.value);
   }
 });
-```
-
-```ts
-// Enum
-const MessageTypes = {
-  ProcessedFile: 'processed-file',
-  ProcessingDuration: 'processing-dration',
-} as const;
 
 // Worker
 postMessage({
   type: 'processed-file',
   value: 'pretend this is a file or something',
 });
-
-// Client
-worker.addListener('message', ({ data }) => {
-  if (data.type === 'processed-file') {
-    doSomethingWithString(data.value);
-  } else if (data.type === 'processing-duration') {
-    doSomethingWithNumber(data.value);
-  }
-});
 ```
 
 ```ts
 // Enum
 const MessageTypes = {
   ProcessedFile: 'processed-file',
-  ProcessingDuration: 'processing-dration',
+  ProcessingDuration: 'processing-duration',
 } as const;
-
-// Worker
-postMessage({
-  type: MessageTypes.ProcessedFile,
-  value: 'pretend this is a file or something',
-});
 
 // Client
 worker.addListener('message', ({ data }) => {
@@ -478,8 +472,82 @@ worker.addListener('message', ({ data }) => {
     doSomethingWithNumber(data.value);
   }
 });
+
+// Worker
+postMessage({
+  type: MessageTypes.ProcessedFile,
+  value: 'pretend this is a file or something',
+});
+
 ```
 ````
+
+---
+transition: fade
+layout: two-code-blocks
+---
+
+_Problems with IPC in practice_
+
+# 2. Tracking operation output is clunky
+
+- All events are inherently generic, making it hard to track the result of a given input.
+
+::left::
+
+<div v-click="1">
+<div class="code-block-header font-mono">
+  main.ts
+</div>
+
+```ts
+import { fork } from 'node:child_process';
+
+// Create a sub-process for the heavy task.
+const taskProcess = fork('./do-heavy-task.js');
+
+// Add a listener for the result of the task.
+taskProcess.on('message', (message) => {
+  console.log(
+    'Task process finished work',
+    message.result
+  );
+});
+
+// Send a message to the sub-process to start the task.
+taskProcess.send({
+  fileToProcess: './some-big-file.txt'
+});
+```
+
+</div>
+
+::right::
+
+<div v-click="2">
+
+<div class="code-block-header font-mono">
+  do-heavy-task.ts
+</div>
+
+```ts
+function processFile(file: string): any {
+  // ...
+}
+
+// Listen for a message from the main process.
+process.on('message', (message) => {
+  // Do some very serious and heavy processing.
+  const result = processFile(message.fileToProcess);
+
+  // Send the result back to the main process.
+  process.send({
+    result,
+  });
+});
+```
+
+</div>
 
 ---
 transition: fade
