@@ -233,6 +233,27 @@ onmessage = (event) => {
 ```
 </div>
 
+---
+transition: fade
+layout: statement
+---
+
+# This looks easy?
+
+In real world applications, it's not quite as straightforward as these examples...
+
+---
+transition: fade
+layout: section
+---
+
+# In the real world..
+
+- you are sending more than just one type of message between processes
+- mistakes and typos are silent runtime bugs
+- tracking input/output is clunky due to event based nature
+- errors can happen 
+
 <!--
 It might be good here to pivot to the problems, and show each problem in a growing
 list which can then be ticked off one by one. Like iteration.
