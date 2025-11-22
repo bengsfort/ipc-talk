@@ -6,7 +6,7 @@ drawings:
   persist: false
 transition: fade
 mdc: true
-duration: 35min
+duration: 26min to get to the "problems" recap currently...
 ---
 
 # Making IPC Less Painful
@@ -31,9 +31,23 @@ transition: fade
 layout: center
 ---
 
+<h1 class="text-center">Splitting work across multiple processes is used for...</h1>
+
+<v-clicks>
+
+- Moving processing intensive work off of the main javascript process.
+- Improving lifecycle management for long-running, possibly external integrations.
+
+</v-clicks>
+
+---
+transition: fade
+layout: center
+---
+
 <h1 class="text-center">Available to a javascript near you!</h1>
 
-<div v-click="1" class="text-center">
+<div class="text-center">
 Usable in Node.js via Child Processes and Worker Threads
 </div>
 
@@ -46,22 +60,19 @@ Usable in Node.js via Child Processes and Worker Threads
 
   <div
     class="process-visual-item"
-    v-click="2"
     v-motion
-    :initial="{ x: 100, y: 50 }"
-    :click-1="{ y: 0 }"
-    :click-2="{ x: 0 }"
+    :initial="{ x: 100, y: 0 }"
+    :enter="{ x: 0 }"
   >
     <img alt="Node.js process image" src="/process.svg" />
-    Node.js
+    Node.js app
   </div>
 
   <div
     class="process-visual-item"
-    v-click="3"
     v-motion
     :initial="{ x: -25, y: 0 }"
-    :click-2="{ x: 0 }"
+    :enter="{ x: 0 }"
   >
     <img alt="Busy node.js process image" src="/process-busy.svg" />
     Forked child process
@@ -69,7 +80,6 @@ Usable in Node.js via Child Processes and Worker Threads
 
   <FlyingData
     class="data-block"
-    v-click="3"
     :startPos="{ x: 90, y: -25 }"
     :endPos="{ x: -100, y: -25 }"
     :delay="5000"
@@ -77,24 +87,23 @@ Usable in Node.js via Child Processes and Worker Threads
 
 </div>
 
-<div v-click="5" class="text-center">
+<div v-click="1" class="text-center">
 Usable in browsers via the Worker API (Web Workers, Shared workers, etc)
 </div>
 
 <div
   class="process-visual"
-  v-click="5"
+  v-click="1"
   v-motion
   :enter="{ opacity: 1 }"
   :leave="{ opacity: 0 }"
 >
   <div
     class="process-visual-item"
-    v-click="6"
+    v-click="1"
     v-motion
-    :initial="{ x: 100, y: 50 }"
-    :click-1="{ y: 0 }"
-    :click-2="{ x: 0 }"
+    :initial="{ x: 100, y: 0 }"
+    :click-1="{ x: 0 }"
   >
     <img alt="Browser image" src="/browser.svg" />
     Browser
@@ -102,10 +111,10 @@ Usable in browsers via the Worker API (Web Workers, Shared workers, etc)
 
   <div
     class="process-visual-item"
-    v-click="7"
+    v-click="1"
     v-motion
     :initial="{ x: -25, y: 0 }"
-    :click-2="{ x: 0 }"
+    :click-1="{ x: 0 }"
   >
     <img alt="Web Worker image" src="/process-busy.svg" />
     Web Worker
@@ -113,7 +122,7 @@ Usable in browsers via the Worker API (Web Workers, Shared workers, etc)
 
   <FlyingData
     class="data-block"
-    v-click="7"
+    v-click="1"
     :startPos="{ x: 90, y: -25 }"
     :endPos="{ x: -100, y: -25 }"
     :delay="5000"
@@ -242,7 +251,7 @@ layout: statement
 
 # Ok? This looks easy?
 
-In real world applications, it's not quite as straightforward as these examples
+What are the problems with IPC in practice?
 
 ---
 transition: fade
@@ -255,7 +264,7 @@ _Problems with IPC in practice_
 
 <v-clicks>
 
-- Once you have more than one message, you need to identify the type for each message.
+- Once you have more than one message, you need to be able to identify each message.
 - If anything in your codebase can add listeners directly, this needs to happen in every listener.
 
 </v-clicks>
@@ -266,15 +275,16 @@ _Problems with IPC in practice_
 ```ts
 // Expected events:
 // number
-worker.addListener('message', ({ data }) => {
+worker.addListener('message', ({ data }: MessageEvent<number>) => {
   doSomethingWithNumber(data);
 });
 ```
+
 ```ts
 // Expected events:
 // number
 // string
-worker.addListener('message', ({ data }) => {
+worker.addListener('message', ({ data }: MessageEvent<number | string>) => {
   if (typeof data === 'string') {
     doSomethingWithString(data);
   } else {
@@ -282,11 +292,12 @@ worker.addListener('message', ({ data }) => {
   }
 });
 ```
+
 ```ts
 // TECHNICALLY works, but...
 // No self-documentation of what messages are available
 // No self-documentation of what each value even is
-worker.addListener('message', ({ data }) => {
+worker.addListener('message', ({ data }: MessageEvent<number | string>) => {
   if (typeof data === 'string') {
     doSomethingWithString(data);
   } else { // Hopefully those really are the only 2 events...
@@ -294,23 +305,51 @@ worker.addListener('message', ({ data }) => {
   }
 });
 ```
+
 ```ts
-// Expected events:
-// 'processing-duration' -> number
-// 'processed-file' -> string
-worker.addListener('message', ({ data }) => {
+// Let's give these some structure...
+type WorkerMessage = {
+  type: 'processed-file';  
+  value: string;           
+} | {
+  type: 'processing-duration';
+  value: number;
+};
+
+worker.addListener('message', ({ data }: MessageEvent<WorkerMessage>) => {
+  // ...
+});
+```
+
+```ts
+type WorkerMessage = {
+  type: 'processed-file';
+  value: string;
+} | {
+  type: 'processing-duration';
+  value: number;
+};
+
+worker.addListener('message', ({ data }: MessageEvent<WorkerMessage>) => {
   if (data.type === 'processed-file') {
     doSomethingWithString(data.value);
   } else if (data.type === 'processing-duration') {
     doSomethingWithNumber(data.value);
   }
 });
+
 ```
+
 ```ts
-// Much better!
-// Now events that describe what they are, but still
-// no self-documentation of available messages or types.
-worker.addListener('message', ({ data }) => {
+type WorkerMessage = {
+  type: 'processed-file'; // Now we have a reference to what messages there are...
+  value: string;          // And what they provide!
+} | {
+  type: 'processing-duration';
+  value: number;
+};
+
+worker.addListener('message', ({ data }: MessageEvent<WorkerMessage>) => {
   if (data.type === 'processed-file') {
     doSomethingWithString(data.value);
   } else if (data.type === 'processing-duration') {
@@ -333,7 +372,6 @@ _Problems with IPC in practice_
 <v-clicks>
 
 - An event name with a typo won't cause a runtime error -- it will just never trigger. Happy debugging!
-- Documentation of what the payload is for each event becomes crucial to avoid accessing undefined props.
 
 </v-clicks>
 
@@ -388,6 +426,7 @@ postMessage({
   value: 'pretend this is a file or something',
 });
 ```
+
 ```ts
 // Client
 worker.addListener('message', ({ data }) => {
@@ -484,728 +523,371 @@ postMessage({
 
 ---
 transition: fade
-layout: two-code-blocks
 ---
 
 _Problems with IPC in practice_
 
-# 2. Tracking operation output is clunky
+# 2a. Mistakes and typos _can also_ be runtime errors
 
-- All events are inherently generic, making it hard to track the result of a given input.
+<v-clicks>
 
-::left::
+- Only the listener API's allow specifying a message's type.
 
-<div v-click="1">
-<div class="code-block-header font-mono">
-  main.ts
-</div>
-
+````md magic-move
 ```ts
-import { fork } from 'node:child_process';
+// Strongly typed.
+worker.addEventListener('message', (message: MessageEvent<WorkerMessage>) => {});
+childProcess.addListener('message', (message: WorkerMessage) => {});
 
-// Create a sub-process for the heavy task.
-const taskProcess = fork('./do-heavy-task.js');
-
-// Add a listener for the result of the task.
-taskProcess.on('message', (message) => {
-  console.log(
-    'Task process finished work',
-    message.result
-  );
-});
-
-// Send a message to the sub-process to start the task.
-taskProcess.send({
-  fileToProcess: './some-big-file.txt'
-});
+// Not strongly typed.
+worker.postMessage({/*...*/});
+childProcess.send({/*...*/});
 ```
 
-</div>
+```ts
+// Strongly typed.
+worker.addEventListener('message', (message: MessageEvent<WorkerMessage>) => {});
+childProcess.addListener('message', (message: WorkerMessage) => {});
 
-::right::
+// Not strongly typed.
+worker.postMessage({/*...*/} as WorkerMessage);
+childProcess.send({/*...*/} as WorkerMessage);
+```
+````
 
-<div v-click="2">
+</v-clicks>
+<v-clicks>
 
-<div class="code-block-header font-mono">
-  do-heavy-task.ts
-</div>
+- All messages go through Serialization, but are serialized differently by each runtime.
+  - Web Workers use the HTML structured clone algorithm.
+  - Node.js uses JSON by default.
+- Sometimes it is valuable to manually JSON serialize/deserialize to avoid surprises.
+  - In these cases, it's important to stay consistent so event handling does not get overly complex.
+
+</v-clicks>
+
+---
+transition: fade
+layout: default
+---
+
+_Problems with IPC in practice_
+
+# 3. Tracking IPC call output is clunky
+
+<v-clicks>
+
+- Sometimes we want to _call_ a function in another process then use the result.
+- This would require:
+  1. 'request' message from process A to process B
+  2. 'response' message from process B back to process A
 
 ```ts
-function processFile(file: string): any {
+// This triggers a function using `data` in another process,
+// and then resolves with the final result!
+const result = await executeSomeIpcFunction(data);
+```
+
+</v-clicks>
+
+---
+transition: fade
+layout: default
+---
+
+_Problems with IPC in practice_
+
+# 3. Tracking IPC call output is clunky
+
+<v-click>
+
+````md magic-move
+```ts
+const worker = new Worker('add.js');
+
+function addNumbers(x: number, y: number): Promise<number> {
+  // ...
+}
+```
+
+```ts
+function addNumbers(x: number, y: number): Promise<number> {
+  return new Promise<number>((resolve) => {
+    // ...
+  });
+}
+```
+
+```ts {3-6}
+function addNumbers(x: number, y: number): Promise<number> {
+  return new Promise<number>((resolve) => {
+    worker.postMessage({
+      type: 'add-numbers',
+      numbers: [x, y],
+    });
+  });
+}
+```
+
+```ts {3-7}
+function addNumbers(x: number, y: number): Promise<number> {
+  return new Promise<number>((resolve) => {
+    const onWorkerMessage = ({ data }) => {
+     // ...
+    };
+
+    worker.addEventListener('message', onWorkerMessage);
+
+    worker.postMessage({
+      type: 'add-numbers',
+      numbers: [x, y],
+    });
+  });
+}
+```
+
+```ts {4-9|*}
+function addNumbers(x: number, y: number): Promise<number> {
+  return new Promise<number>((resolve) => {
+    const onWorkerMessage = ({ data }) => {
+      if (data.type !== 'add-numbers-result') {
+        return;
+      }
+
+      worker.removeEventListener('message', onWorkerMessage);
+      resolve(data.result);
+    };
+
+    worker.addEventListener('message', onWorkerMessage);
+
+    worker.postMessage({
+      type: 'add-numbers',
+      numbers: [x, y],
+    });
+  });
+}
+```
+````
+
+</v-click>
+
+---
+transition: fade
+layout: statement
+---
+
+# There's a slight issue here...
+
+---
+transition: fade
+layout: default
+---
+
+_Problems with IPC in practice_
+
+# 3. Tracking IPC call output is clunky
+
+````md magic-move
+```ts {9}
+function addNumbers(x: number, y: number): Promise<number> {
+  return new Promise<number>((resolve) => {
+    const onWorkerMessage = ({ data }) => {
+      if (data.type !== 'add-numbers-result') {
+        return;
+      }
+
+      worker.removeEventListener('message', onWorkerMessage);
+      resolve(data.result); // How do we know this is the result for x and y?
+    };
+
+    worker.addEventListener('message', onWorkerMessage);
+
+    worker.postMessage({
+      type: 'add-numbers',
+      numbers: [x, y],
+    });
+  });
+}
+```
+
+```ts
+function addNumbers(x: number, y: number): Promise<number> {
   // ...
 }
 
-// Listen for a message from the main process.
-process.on('message', (message) => {
-  // Do some very serious and heavy processing.
-  const result = processFile(message.fileToProcess);
+calculateNumbersButton.addEventListener('click', async () => {
+  const x = xInputElement.valueAsNumber;
+  const y = yInputElement.valueAsNumber;
 
-  // Send the result back to the main process.
-  process.send({
-    result,
-  });
+  const result = await addNumbers(x, y);
+  resultLabel.innerText = `Result is ${result}!`;
 });
-```
 
-</div>
-
----
-transition: fade
----
-
-## More than just one type of message are sent between processes
-## Mistakes and typos are silent runtime bugs
-## Tracking the result of operations are clunky
-## Errors can happen 
-
-<!--
-It might be good here to pivot to the problems, and show each problem in a growing
-list which can then be ticked off one by one. Like iteration.
--->
-
----
-transition: fade
-layout: default
----
-
-# What do these have in common?
-
-- Examples with the magic thing to show they are just event emitters
-
----
-transition: fade
-layout: default
----
-
-# IPC gets complex very quickly
-
-- What happens if one of processes errors?
-- How do you handle setup and cleanup effectively?
-- What if you need to support multiple messages, not just one?
-  - Add example?
-- Using the other process like an API is clunky due to the event-based nature
-
----
-transition: fade
-layout: center
----
-
-# How can we improve this?
-
----
-transition: fade
-layout: center
----
-
-<h1 class="text-center">Electron</h1>
-
-<div
-  class="process-visual"
-  v-motion
-  :enter="{ opacity: 1 }"
-  :leave="{ opacity: 0 }"
->
-  <div
-    class="process-visual-item"
-    v-motion
-    :initial="{ x: 0, y: 50 }"
-    :enter="{ x: 0, y: 0 }"
-  >
-    <img alt="Browser image" src="/browser.svg" />
-    Render Process
-  </div>
-
-  <div
-    class="process-visual-item"
-    v-motion
-    :initial="{ x: 0, y: 50 }"
-    :enter="{ x: 0, y: 0 }"
-  >
-    <img alt="Web Worker image" src="/process.svg" />
-    Electron Main Process
-  </div>
-
-  <FlyingData
-    class="data-block"
-    v-click="1"
-    :startPos="{ x: 75, y: -20 }"
-    :endPos="{ x: -75 }"
-    :delay="3000"
-  />
-  <FlyingData
-    class="data-block"
-    v-click="1"
-    :startPos="{ x: -75, y: -40 }"
-    :endPos="{ x: 75 }"
-    :delay="3000"
-  />
-</div>
-
----
-transition: fade
-layout: image
-image: /data.jpg
----
-
----
-transition: fade-out
-layout: center
----
-
-# Data is quite important
-
----
-transition: slide-up
-level: 2
----
-
-# There is a lot to figure out..
-
-<div v-click>
-- What was the average lap time every session, per driver?
-</div>
-
-<div v-click>
-- What was the average fuel per lap for each driver? How many laps could they do?
-</div>
-
-<div v-click>
-- How much damage was done to the tires per lap per driver? Did they need to be replaced?
-</div>
-
-<div v-click>
-- What is the average time per driver stint? How long is each driver "in the car" for?
-</div>
-
-<div v-click>
-- What is the optimal laps per stint, per driver, to where you don't waste time?
-</div> 
-
----
-transition: fade
-layout: image
-image: /data.jpg
----
-
----
-layout: two-cols
-layoutClass: gap-16
----
-
-# Table of contents
-
-You can use the `Toc` component to generate a table of contents for your slides:
-
-```html
-<Toc minDepth="1" maxDepth="1" />
-```
-
-The title will be inferred from your slide content, or you can override it with `title` and `level` in your frontmatter.
-
-::right::
-
-<Toc text-sm minDepth="1" maxDepth="2" />
-
----
-layout: image-right
-image: https://cover.sli.dev
----
-
-# Code
-
-Use code snippets and get the highlighting directly, and even types hover!
-
-```ts [filename-example.ts] {all|4|6|6-7|9|all} twoslash
-// TwoSlash enables TypeScript hover information
-// and errors in markdown code blocks
-// More at https://shiki.style/packages/twoslash
-import { computed, ref } from 'vue'
-
-const count = ref(0)
-const doubled = computed(() => count.value * 2)
-
-doubled.value = 2
-```
-
-<arrow v-click="[4, 5]" x1="350" y1="310" x2="195" y2="342" color="#953" width="2" arrowSize="1" />
-
-<!-- This allow you to embed external code blocks -->
-<<< @/snippets/external.ts#snippet
-
-<!-- Footer -->
-
-[Learn more](https://sli.dev/features/line-highlighting)
-
-<!-- Inline style -->
-<style>
-.footnotes-sep {
-  @apply mt-5 opacity-10;
-}
-.footnotes {
-  @apply text-sm opacity-75;
-}
-.footnote-backref {
-  display: none;
-}
-</style>
-
-<!--
-Notes can also sync with clicks
-
-[click] This will be highlighted after the first click
-
-[click] Highlighted with `count = ref(0)`
-
-[click:3] Last click (skip two clicks)
--->
-
----
-level: 2
----
-
-# Shiki Magic Move
-
-Powered by [shiki-magic-move](https://shiki-magic-move.netlify.app/), Slidev supports animations across multiple code snippets.
-
-Add multiple code blocks and wrap them with <code>````md magic-move</code> (four backticks) to enable the magic move. For example:
-
-````md magic-move {lines: true}
-```ts {*|2|*}
-// step 1
-const author = reactive({
-  name: 'John Doe',
-  books: [
-    'Vue 2 - Advanced Guide',
-    'Vue 3 - Basic Guide',
-    'Vue 4 - The Mystery'
-  ]
-})
-```
-
-```ts {*|1-2|3-4|3-4,8}
-// step 2
-export default {
-  data() {
-    return {
-      author: {
-        name: 'John Doe',
-        books: [
-          'Vue 2 - Advanced Guide',
-          'Vue 3 - Basic Guide',
-          'Vue 4 - The Mystery'
-        ]
-      }
-    }
-  }
-}
+// Click 1:
+//    x = 5, y = 5. Result = 10. All good!
 ```
 
 ```ts
-// step 3
-export default {
-  data: () => ({
-    author: {
-      name: 'John Doe',
-      books: [
-        'Vue 2 - Advanced Guide',
-        'Vue 3 - Basic Guide',
-        'Vue 4 - The Mystery'
-      ]
-    }
-  })
+function addNumbers(x: number, y: number): Promise<number> {
+  // ...
+}
+
+calculateNumbersButton.addEventListener('click', async () => {
+  const x = xInputElement.valueAsNumber;
+  const y = yInputElement.valueAsNumber;
+
+  const result = await addNumbers(x, y);
+  resultLabel.innerText = `Result is ${result}!`;
+});
+
+// Click 1:
+//    x = 5, y = 5. Result = 10. All good!
+// Click 2:
+//    x = 2, y = 1. Result = 3. Yay!
+```
+
+```ts
+function addNumbers(x: number, y: number): Promise<number> {
+  // ...
+}
+
+calculateNumbersButton.addEventListener('click', async () => {
+  const x = xInputElement.valueAsNumber;
+  const y = yInputElement.valueAsNumber;
+
+  const result = await addNumbers(x, y);
+  resultLabel.innerText = `Result is ${result}!`;
+});
+
+// Click 1:
+//    x = 5, y = 5. Result = 10. All good!
+// Click 2 (before click 1 resolves):
+//    x = 2, y = 1.
+```
+
+```ts
+function addNumbers(x: number, y: number): Promise<number> {
+  // ...
+}
+
+calculateNumbersButton.addEventListener('click', async () => {
+  const x = xInputElement.valueAsNumber;
+  const y = yInputElement.valueAsNumber;
+
+  const result = await addNumbers(x, y);
+  resultLabel.innerText = `Result is ${result}!`;
+});
+
+// Click 1:
+//    x = 5, y = 5. Result = 10. All good!
+// Click 2 (before click 1 resolves):
+//    x = 2, y = 1. Result = 10. Uh oh!
+```
+
+```ts
+function addNumbers(x: number, y: number): Promise<number> {
+  return new Promise<number>((resolve) => {
+    const onWorkerMessage = ({ data }) => {
+      if (data.type !== 'add-numbers-result') {
+        return;
+      }
+
+      worker.removeEventListener('message', onWorkerMessage);
+      resolve(data.result);
+    };
+
+    worker.addEventListener('message', onWorkerMessage);
+
+    worker.postMessage({
+      type: 'add-numbers',
+      numbers: [x, y],
+    });
+  });
 }
 ```
 
-Non-code blocks are ignored.
+```ts {2}
+function addNumbers(x: number, y: number): Promise<number> {
+  const requestId = `${x}:${y}`;
+  return new Promise<number>((resolve) => {
+    const onWorkerMessage = ({ data }) => {
+      if (data.type !== 'add-numbers-result') {
+        return;
+      }
 
-```vue
-<!-- step 4 -->
-<script setup>
-const author = {
-  name: 'John Doe',
-  books: [
-    'Vue 2 - Advanced Guide',
-    'Vue 3 - Basic Guide',
-    'Vue 4 - The Mystery'
-  ]
+      worker.removeEventListener('message', onWorkerMessage);
+      resolve(data.result);
+    };
+
+    worker.addEventListener('message', onWorkerMessage);
+
+    worker.postMessage({
+      type: 'add-numbers',
+      numbers: [x, y],
+    });
+  });
 }
-</script>
+```
+
+```ts {2,4-11,15-19|*}
+function addNumbers(x: number, y: number): Promise<number> {
+  const requestId = `${x}:${y}`;
+  return new Promise<number>((resolve) => {
+    const onWorkerMessage = ({ data }) => {
+      if (requestId !== data.requestId || data.type !== 'add-numbers-result') {
+        return;
+      }
+
+      worker.removeEventListener('message', onWorkerMessage);
+      resolve(data.result);
+    };
+
+    worker.addEventListener('message', onWorkerMessage);
+
+    worker.postMessage({
+      type: 'add-numbers',
+      numbers: [x, y],
+      requestId,
+    });
+  });
+}
 ```
 ````
 
 ---
-
-# Components
-
-<div grid="~ cols-2 gap-4">
-<div>
-
-You can use Vue components directly inside your slides.
-
-We have provided a few built-in components like `<Tweet/>` and `<Youtube/>` that you can use directly. And adding your custom components is also super easy.
-
-```html
-<Counter :count="10" />
-```
-
-<!-- ./components/Counter.vue -->
-<Counter :count="10" m="t-4" />
-
-Check out [the guides](https://sli.dev/builtin/components.html) for more.
-
-</div>
-<div>
-
-```html
-<Tweet id="1390115482657726468" />
-```
-
-<Tweet id="1390115482657726468" scale="0.65" />
-
-</div>
-</div>
-
-<!--
-Presenter note with **bold**, *italic*, and ~~striked~~ text.
-
-Also, HTML elements are valid:
-<div class="flex w-full">
-  <span style="flex-grow: 1;">Left content</span>
-  <span>Right content</span>
-</div>
--->
-
----
-class: px-20
+transition: fade
+layout: default
 ---
 
-# Themes
+_Problems with IPC in practice_
 
-Slidev comes with powerful theming support. Themes can provide styles, layouts, components, or even configurations for tools. Switching between themes by just **one edit** in your frontmatter:
+# 3. Tracking IPC call output is clunky
 
-<div grid="~ cols-2 gap-2" m="t-2">
 
-```yaml
----
-theme: default
----
-```
+- This doesn't even cover every edge case for a good UX. For example:
+  - Timeouts
+  - Errors
 
-```yaml
----
-theme: seriph
----
-```
+<v-clicks>
 
-<img border="rounded" src="https://github.com/slidevjs/themes/blob/main/screenshots/theme-default/01.png?raw=true" alt="">
+- AND this would need to be replicated separately for every _IPC call_ that you have.
 
-<img border="rounded" src="https://github.com/slidevjs/themes/blob/main/screenshots/theme-seriph/01.png?raw=true" alt="">
-
-</div>
-
-Read more about [How to use a theme](https://sli.dev/guide/theme-addon#use-theme) and
-check out the [Awesome Themes Gallery](https://sli.dev/resources/theme-gallery).
+</v-clicks>
 
 ---
-
-# Clicks Animations
-
-You can add `v-click` to elements to add a click animation.
-
-<div v-click>
-
-This shows up when you click the slide:
-
-```html
-<div v-click>This shows up when you click the slide.</div>
-```
-
-</div>
-
-<br>
-
-<v-click>
-
-The <span v-mark.red="3"><code>v-mark</code> directive</span>
-also allows you to add
-<span v-mark.circle.orange="4">inline marks</span>
-, powered by [Rough Notation](https://roughnotation.com/):
-
-```html
-<span v-mark.underline.orange>inline markers</span>
-```
-
-</v-click>
-
-<div mt-20 v-click>
-
-[Learn more](https://sli.dev/guide/animations#click-animation)
-
-</div>
-
----
-
-# Motions
-
-Motion animations are powered by [@vueuse/motion](https://motion.vueuse.org/), triggered by `v-motion` directive.
-
-```html
-<div
-  v-motion
-  :initial="{ x: -80 }"
-  :enter="{ x: 0 }"
-  :click-3="{ x: 80 }"
-  :leave="{ x: 1000 }"
->
-  Slidev
-</div>
-```
-
-<div class="w-60 relative">
-  <div class="relative w-40 h-40">
-    <img
-      v-motion
-      :initial="{ x: 800, y: -100, scale: 1.5, rotate: -50 }"
-      :enter="final"
-      class="absolute inset-0"
-      src="https://sli.dev/logo-square.png"
-      alt=""
-    />
-    <img
-      v-motion
-      :initial="{ y: 500, x: -100, scale: 2 }"
-      :enter="final"
-      class="absolute inset-0"
-      src="https://sli.dev/logo-circle.png"
-      alt=""
-    />
-    <img
-      v-motion
-      :initial="{ x: 600, y: 400, scale: 2, rotate: 100 }"
-      :enter="final"
-      class="absolute inset-0"
-      src="https://sli.dev/logo-triangle.png"
-      alt=""
-    />
-  </div>
-
-  <div
-    class="text-5xl absolute top-14 left-40 text-[#2B90B6] -z-1"
-    v-motion
-    :initial="{ x: -80, opacity: 0}"
-    :enter="{ x: 0, opacity: 1, transition: { delay: 2000, duration: 1000 } }">
-    Slidev
-  </div>
-</div>
-
-<!-- vue script setup scripts can be directly used in markdown, and will only affects current page -->
-<script setup lang="ts">
-const final = {
-  x: 0,
-  y: 0,
-  rotate: 0,
-  scale: 1,
-  transition: {
-    type: 'spring',
-    damping: 10,
-    stiffness: 20,
-    mass: 2
-  }
-}
-</script>
-
-<div
-  v-motion
-  :initial="{ x:35, y: 30, opacity: 0}"
-  :enter="{ y: 0, opacity: 1, transition: { delay: 3500 } }">
-
-[Learn more](https://sli.dev/guide/animations.html#motion)
-
-</div>
-
----
-
-# LaTeX
-
-LaTeX is supported out-of-box. Powered by [KaTeX](https://katex.org/).
-
-<div h-3 />
-
-Inline $\sqrt{3x-1}+(1+x)^2$
-
-Block
-$$ {1|3|all}
-\begin{aligned}
-\nabla \cdot \vec{E} &= \frac{\rho}{\varepsilon_0} \\
-\nabla \cdot \vec{B} &= 0 \\
-\nabla \times \vec{E} &= -\frac{\partial\vec{B}}{\partial t} \\
-\nabla \times \vec{B} &= \mu_0\vec{J} + \mu_0\varepsilon_0\frac{\partial\vec{E}}{\partial t}
-\end{aligned}
-$$
-
-[Learn more](https://sli.dev/features/latex)
-
----
-
-# Diagrams
-
-You can create diagrams / graphs from textual descriptions, directly in your Markdown.
-
-<div class="grid grid-cols-4 gap-5 pt-4 -mb-6">
-
-```mermaid {scale: 0.5, alt: 'A simple sequence diagram'}
-sequenceDiagram
-    Alice->John: Hello John, how are you?
-    Note over Alice,John: A typical interaction
-```
-
-```mermaid {theme: 'neutral', scale: 0.8}
-graph TD
-B[Text] --> C{Decision}
-C -->|One| D[Result 1]
-C -->|Two| E[Result 2]
-```
-
-```mermaid
-mindmap
-  root((mindmap))
-    Origins
-      Long history
-      ::icon(fa fa-book)
-      Popularisation
-        British popular psychology author Tony Buzan
-    Research
-      On effectiveness<br/>and features
-      On Automatic creation
-        Uses
-            Creative techniques
-            Strategic planning
-            Argument mapping
-    Tools
-      Pen and paper
-      Mermaid
-```
-
-```plantuml {scale: 0.7}
-@startuml
-
-package "Some Group" {
-  HTTP - [First Component]
-  [Another Component]
-}
-
-node "Other Groups" {
-  FTP - [Second Component]
-  [First Component] --> FTP
-}
-
-cloud {
-  [Example 1]
-}
-
-database "MySql" {
-  folder "This is my folder" {
-    [Folder 3]
-  }
-  frame "Foo" {
-    [Frame 4]
-  }
-}
-
-[Another Component] --> [Example 1]
-[Example 1] --> [Folder 3]
-[Folder 3] --> [Frame 4]
-
-@enduml
-```
-
-</div>
-
-Learn more: [Mermaid Diagrams](https://sli.dev/features/mermaid) and [PlantUML Diagrams](https://sli.dev/features/plantuml)
-
----
-foo: bar
-dragPos:
-  square: 664,18,167,_,-16
----
-
-# Draggable Elements
-
-Double-click on the draggable elements to edit their positions.
-
-<br>
-
-###### Directive Usage
-
-```md
-<img v-drag="'square'" src="https://sli.dev/logo.png">
-```
-
-<br>
-
-###### Component Usage
-
-```md
-<v-drag text-3xl>
-  <div class="i-carbon:arrow-up" />
-  Use the `v-drag` component to have a draggable container!
-</v-drag>
-```
-
-<v-drag pos="663,206,261,_,-15">
-  <div text-center text-3xl border border-main rounded>
-    Double-click me!
-  </div>
-</v-drag>
-
-<img v-drag="'square'" src="https://sli.dev/logo.png">
-
-###### Draggable Arrow
-
-```md
-<v-drag-arrow two-way />
-```
-
-<v-drag-arrow pos="67,452,253,46" two-way op70 />
-
----
-src: ./pages/imported-slides.md
-hide: false
----
-
----
-
-# Monaco Editor
-
-Slidev provides built-in Monaco Editor support.
-
-Add `{monaco}` to the code block to turn it into an editor:
-
-```ts {monaco}
-import { ref } from 'vue'
-import { emptyArray } from './external'
-
-const arr = ref(emptyArray(10))
-```
-
-Use `{monaco-run}` to create an editor that can execute the code directly in the slide:
-
-```ts {monaco-run}
-import { version } from 'vue'
-import { emptyArray, sayHello } from './external'
-
-sayHello()
-console.log(`vue ${version}`)
-console.log(emptyArray<number>(10).reduce(fib => [...fib, fib.at(-1)! + fib.at(-2)!], [1, 1]))
-```
-
----
+transition: fade
 layout: center
-class: text-center
 ---
 
-# Learn More
+# Problems with IPC in practice
 
-[Documentation](https://sli.dev) · [GitHub](https://github.com/slidevjs/slidev) · [Showcases](https://sli.dev/resources/showcases)
+1. Structured data is needed to support multiple message types
+2. Mistakes and typos are silent runtime bugs (and sometimes crashes)
+3. Tracking IPC call output is clunky
 
-<PoweredBySlidev mt-10 />
+---
+transition: fade
+layout: statement
+---
+
+# How can we improve this?
