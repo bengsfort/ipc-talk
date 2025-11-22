@@ -64,14 +64,15 @@ Usable in Node.js via Child Processes and Worker Threads
     :click-2="{ x: 0 }"
   >
     <img alt="Busy node.js process image" src="/process-busy.svg" />
-    Hard working subprocess
+    Forked child process
   </div>
 
   <FlyingData
     class="data-block"
-    v-click="4"
+    v-click="3"
     :startPos="{ x: 90, y: -25 }"
     :endPos="{ x: -100, y: -25 }"
+    :delay="5000"
   />
 
 </div>
@@ -112,9 +113,10 @@ Usable in browsers via the Worker API (Web Workers, Shared workers, etc)
 
   <FlyingData
     class="data-block"
-    v-click="8"
+    v-click="7"
     :startPos="{ x: 90, y: -25 }"
     :endPos="{ x: -100, y: -25 }"
+    :delay="5000"
   />
 </div>
 
@@ -203,9 +205,9 @@ const buttonEl = getElementById('calculate-button');
 const worker = new Worker('add.js');
 
 // Add a listener for the message containing the result.
-worker.onmessage = (event) => {
+worker.addEventListener('message', (event) => {
   resultEl.innerText = `Result: ${event.data}`;
-};
+});
 
 // Send a message to the worker to initialize the work.
 buttonEl.addEventListener('click', (ev) => {
@@ -223,13 +225,13 @@ buttonEl.addEventListener('click', (ev) => {
 
 ```ts
 // Listen for a message from the main process.
-onmessage = (event) => {
+addEventListener('message', (event) => {
   // Do some serious work.
   const result = event.x + event.y;
 
   // Send the result back to the main thread.
   postMessage(result);
-};
+});
 ```
 </div>
 
@@ -238,21 +240,255 @@ transition: fade
 layout: statement
 ---
 
-# This looks easy?
+# Ok? This looks easy?
 
-In real world applications, it's not quite as straightforward as these examples...
+In real world applications, it's not quite as straightforward as these examples
 
 ---
 transition: fade
-layout: section
+layout: default
 ---
 
-# In the real world..
+_Problems with IPC in practice_
 
-- you are sending more than just one type of message between processes
-- mistakes and typos are silent runtime bugs
-- tracking input/output is clunky due to event based nature
-- errors can happen 
+# 1. Structured data is needed to support multiple message types
+
+<v-clicks>
+
+- Once you have more than one message, you need to identify the type for each message.
+- If anything in your codebase can add listeners directly, this needs to happen in every listener.
+
+</v-clicks>
+
+<v-click>
+
+````md magic-move
+```ts
+// Expected events:
+// number
+worker.addListener('message', ({ data }) => {
+  doSomethingWithNumber(data);
+});
+```
+```ts
+// Expected events:
+// number
+// string
+worker.addListener('message', ({ data }) => {
+  if (typeof data === 'string') {
+    doSomethingWithString(data);
+  } else {
+    doSomethingWithNumber(data);
+  }
+});
+```
+```ts
+// TECHNICALLY works, but...
+// No self-documentation of what messages are available
+// No self-documentation of what each value even is
+worker.addListener('message', ({ data }) => {
+  if (typeof data === 'string') {
+    doSomethingWithString(data);
+  } else { // Hopefully those really are the only 2 events...
+    doSomethingWithNumber(data);
+  }
+});
+```
+```ts
+// Expected events:
+// 'processing-duration' -> number
+// 'processed-file' -> string
+worker.addListener('message', ({ data }) => {
+  if (data.type === 'processed-file') {
+    doSomethingWithString(data.value);
+  } else if (data.type === 'processing-duration') {
+    doSomethingWithNumber(data.value);
+  }
+});
+```
+```ts
+// Much better!
+// Now events that describe what they are, but still
+// no self-documentation of available messages or types.
+worker.addListener('message', ({ data }) => {
+  if (data.type === 'processed-file') {
+    doSomethingWithString(data.value);
+  } else if (data.type === 'processing-duration') {
+    doSomethingWithNumber(data.value);
+  }
+});
+```
+````
+
+</v-click>
+
+---
+transition: fade
+---
+
+_Problems with IPC in practice_
+
+# 2. Mistakes and typos are silent runtime bugs
+
+<v-clicks>
+
+- An event name with a typo won't cause a runtime error -- it will just never trigger. Happy debugging!
+- Documentation of what the payload is for each event becomes crucial to avoid accessing undefined props.
+
+</v-clicks>
+
+<v-click>
+
+````md magic-move
+```ts {*|3}
+// Worker
+postMessage({
+  type: 'procesed-file',
+  value: 'pretend this is a file or something',
+});
+
+// Client
+worker.addListener('message', ({ data }) => {
+  if (data.type === 'processed-file') {
+    doSomethingWithString(data.value);
+  } else if (data.type === 'processing-duration') {
+    doSomethingWithNumber(data.value);
+  }
+});
+```
+```ts
+// Worker
+postMessage({
+  type: 'processed-file',
+  value: 'pretend this is a file or something',
+});
+
+// Client
+worker.addListener('message', ({ data }) => {
+  if (data.type === 'processed-file') {
+    doSomethingWithString(data.value);
+  } else if (data.type === 'processing-duration') {
+    doSomethingWithNumber(data.value);
+  }
+});
+```
+```ts {9}
+// Worker
+postMessage({
+  type: 'processed-file',
+  value: 'pretend this is a file or something',
+});
+
+// Client
+worker.addListener('message', ({ data }) => {
+  if (data.type === 'procesed-file') {
+    doSomethingWithString(data.value);
+  } else if (data.type === 'processing-duration') {
+    doSomethingWithNumber(data.value);
+  }
+});
+```
+```ts
+// Worker
+postMessage({
+  type: 'processed-file',
+  value: 'pretend this is a file or something',
+});
+
+// Client
+worker.addListener('message', ({ data }) => {
+  if (data.type === 'processed-file') {
+    doSomethingWithString(data.value);
+  } else if (data.type === 'processing-duration') {
+    doSomethingWithNumber(data.value);
+  }
+});
+```
+````
+
+</v-click>
+
+---
+transition: fade
+---
+
+_Problems with IPC in practice_
+
+# 2. Mistakes and typos are silent runtime bugs
+
+````md magic-move
+```ts
+// Worker
+postMessage({
+  type: 'processed-file',
+  value: 'pretend this is a file or something',
+});
+
+// Client
+worker.addListener('message', ({ data }) => {
+  if (data.type === 'processed-file') {
+    doSomethingWithString(data.value);
+  } else if (data.type === 'processing-duration') {
+    doSomethingWithNumber(data.value);
+  }
+});
+```
+
+```ts
+// Enum
+const MessageTypes = {
+  ProcessedFile: 'processed-file',
+  ProcessingDuration: 'processing-dration',
+} as const;
+
+// Worker
+postMessage({
+  type: 'processed-file',
+  value: 'pretend this is a file or something',
+});
+
+// Client
+worker.addListener('message', ({ data }) => {
+  if (data.type === 'processed-file') {
+    doSomethingWithString(data.value);
+  } else if (data.type === 'processing-duration') {
+    doSomethingWithNumber(data.value);
+  }
+});
+```
+
+```ts
+// Enum
+const MessageTypes = {
+  ProcessedFile: 'processed-file',
+  ProcessingDuration: 'processing-dration',
+} as const;
+
+// Worker
+postMessage({
+  type: MessageTypes.ProcessedFile,
+  value: 'pretend this is a file or something',
+});
+
+// Client
+worker.addListener('message', ({ data }) => {
+  if (data.type === MessageTypes.ProcessedFile) {
+    doSomethingWithString(data.value);
+  } else if (data.type === MessageTypes.ProcessingDuration) {
+    doSomethingWithNumber(data.value);
+  }
+});
+```
+````
+
+---
+transition: fade
+---
+
+## More than just one type of message are sent between processes
+## Mistakes and typos are silent runtime bugs
+## Tracking the result of operations are clunky
+## Errors can happen 
 
 <!--
 It might be good here to pivot to the problems, and show each problem in a growing
