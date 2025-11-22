@@ -275,7 +275,7 @@ _Problems with IPC in practice_
 ```ts
 // Expected events:
 // number
-worker.addListener('message', ({ data }: MessageEvent<number>) => {
+worker.addEventListener('message', ({ data }: MessageEvent<number>) => {
   doSomethingWithNumber(data);
 });
 ```
@@ -284,7 +284,7 @@ worker.addListener('message', ({ data }: MessageEvent<number>) => {
 // Expected events:
 // number
 // string
-worker.addListener('message', ({ data }: MessageEvent<number | string>) => {
+worker.addEventListener('message', ({ data }: MessageEvent<number | string>) => {
   if (typeof data === 'string') {
     doSomethingWithString(data);
   } else {
@@ -297,7 +297,7 @@ worker.addListener('message', ({ data }: MessageEvent<number | string>) => {
 // TECHNICALLY works, but...
 // No self-documentation of what messages are available
 // No self-documentation of what each value even is
-worker.addListener('message', ({ data }: MessageEvent<number | string>) => {
+worker.addEventListener('message', ({ data }: MessageEvent<number | string>) => {
   if (typeof data === 'string') {
     doSomethingWithString(data);
   } else { // Hopefully those really are the only 2 events...
@@ -316,7 +316,7 @@ type WorkerMessage = {
   value: number;
 };
 
-worker.addListener('message', ({ data }: MessageEvent<WorkerMessage>) => {
+worker.addEventListener('message', ({ data }: MessageEvent<WorkerMessage>) => {
   // ...
 });
 ```
@@ -330,7 +330,7 @@ type WorkerMessage = {
   value: number;
 };
 
-worker.addListener('message', ({ data }: MessageEvent<WorkerMessage>) => {
+worker.addEventListener('message', ({ data }: MessageEvent<WorkerMessage>) => {
   if (data.type === 'processed-file') {
     doSomethingWithString(data.value);
   } else if (data.type === 'processing-duration') {
@@ -349,7 +349,7 @@ type WorkerMessage = {
   value: number;
 };
 
-worker.addListener('message', ({ data }: MessageEvent<WorkerMessage>) => {
+worker.addEventListener('message', ({ data }: MessageEvent<WorkerMessage>) => {
   if (data.type === 'processed-file') {
     doSomethingWithString(data.value);
   } else if (data.type === 'processing-duration') {
@@ -380,7 +380,7 @@ _Problems with IPC in practice_
 ````md magic-move
 ```ts {*|12}
 // Client
-worker.addListener('message', ({ data }) => {
+worker.addEventListener('message', ({ data }) => {
   if (data.type === 'processed-file') {
     doSomethingWithString(data.value);
   } else if (data.type === 'processing-duration') {
@@ -396,7 +396,7 @@ postMessage({
 ```
 ```ts
 // Client
-worker.addListener('message', ({ data }) => {
+worker.addEventListener('message', ({ data }) => {
   if (data.type === 'processed-file') {
     doSomethingWithString(data.value);
   } else if (data.type === 'processing-duration') {
@@ -412,7 +412,7 @@ postMessage({
 ```
 ```ts {3}
 // Client
-worker.addListener('message', ({ data }) => {
+worker.addEventListener('message', ({ data }) => {
   if (data.type === 'procesed-file') {
     doSomethingWithString(data.value);
   } else if (data.type === 'processing-duration') {
@@ -429,7 +429,7 @@ postMessage({
 
 ```ts
 // Client
-worker.addListener('message', ({ data }) => {
+worker.addEventListener('message', ({ data }) => {
   if (data.type === 'processed-file') {
     doSomethingWithString(data.value);
   } else if (data.type === 'processing-duration') {
@@ -458,7 +458,7 @@ _Problems with IPC in practice_
 ````md magic-move
 ```ts
 // Client
-worker.addListener('message', ({ data }) => {
+worker.addEventListener('message', ({ data }) => {
   if (data.type === 'processed-file') {
     doSomethingWithString(data.value);
   } else if (data.type === 'processing-duration') {
@@ -481,7 +481,7 @@ const MessageTypes = {
 } as const;
 
 // Client
-worker.addListener('message', ({ data }) => {
+worker.addEventListener('message', ({ data }) => {
   if (data.type === 'processed-file') {
     doSomethingWithString(data.value);
   } else if (data.type === 'processing-duration') {
@@ -504,7 +504,7 @@ const MessageTypes = {
 } as const;
 
 // Client
-worker.addListener('message', ({ data }) => {
+worker.addEventListener('message', ({ data }) => {
   if (data.type === MessageTypes.ProcessedFile) {
     doSomethingWithString(data.value);
   } else if (data.type === MessageTypes.ProcessingDuration) {
@@ -537,7 +537,7 @@ _Problems with IPC in practice_
 ```ts
 // Strongly typed.
 worker.addEventListener('message', (message: MessageEvent<WorkerMessage>) => {});
-childProcess.addListener('message', (message: WorkerMessage) => {});
+childProcess.on('message', (message: WorkerMessage) => {});
 
 // Not strongly typed.
 worker.postMessage({/*...*/});
@@ -547,7 +547,7 @@ childProcess.send({/*...*/});
 ```ts
 // Strongly typed.
 worker.addEventListener('message', (message: MessageEvent<WorkerMessage>) => {});
-childProcess.addListener('message', (message: WorkerMessage) => {});
+childProcess.on('message', (message: WorkerMessage) => {});
 
 // Not strongly typed.
 worker.postMessage({/*...*/} as WorkerMessage);
