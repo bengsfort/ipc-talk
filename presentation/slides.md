@@ -131,63 +131,94 @@ Usable in browsers via the Worker API (Web Workers, Shared workers, etc)
 
 ---
 transition: fade
+layout: default
+---
+
+# A very basic example
+
+- We have a function that adds numbers in a sub-process.
+
+<v-clicks>
+
+- We want to send a message to the process with numbers to add, then log the result in our main process.
+
+```ts
+// Message schema for main process -> sub process message with numbers to add.
+interface AddNumbersMsg {
+  type: 'add-numbers';
+  numbers: number[];
+}
+
+// Message schema for sub process -> main process message with the result.
+interface AddResultMsg {
+  type: 'add-numbers:result',
+  result: number;
+}
+```
+
+</v-clicks>
+
+---
+transition: fade
 layout: two-code-blocks
 ---
 
-# IPC in Node.js
+# A very basic example
 
 ::left::
 
-<div v-click="1">
 <div class="code-block-header font-mono">
-  main.ts
+  Node.js - main process
 </div>
 
-```ts
+```ts {*|3-4|6-12|14-18|*}
 import { fork } from 'node:child_process';
 
 // Create a sub-process for the heavy task.
-const taskProcess = fork('./do-heavy-task.js');
+const taskProcess = fork('./add.js');
 
 // Add a listener for the result of the task.
-taskProcess.on('message', (message) => {
-  console.log(
-    'Task process finished work',
-    message.result
-  );
-});
+taskProcess.on(
+  'message',
+  (message: AddResultMsg) => {
+    console.log(`Result: ${message.result}`);
+  },
+);
 
 // Send a message to the sub-process to start the task.
 taskProcess.send({
-  fileToProcess: './some-big-file.txt'
-});
+  type: 'add-numbers',
+  numbers: [5, 10],
+} as AddNumbersMsg);
 ```
-
-</div>
 
 ::right::
 
-<div v-click="2">
+<div v-click="4">
 
 <div class="code-block-header font-mono">
-  do-heavy-task.ts
+  Web - main script
 </div>
 
-```ts
-function processFile(file: string): any {
-  // ...
-}
+```ts {*|3-4|6-12|14-18|*}
+// Worker is in the global scope, so no need to import.
 
-// Listen for a message from the main process.
-process.on('message', (message) => {
-  // Do some very serious and heavy processing.
-  const result = processFile(message.fileToProcess);
+// Create a Worker for the heavy task.
+const worker = new Worker('./add.js');
 
-  // Send the result back to the main process.
-  process.send({
-    result,
-  });
-});
+// Add a listener for the result of the task.
+worker.addEventListener(
+  'message',
+  (event: MessageEvent<AddResultMsg>) => {
+    console.log(`Result: ${event.data.result}`);
+  },
+);
+
+// Send a message to the sub-process to start the task.
+worker.postMessage({
+  type: 'add-numbers',
+  numbers: [5, 10],
+} as AddNumbersMsg);
 ```
 
 </div>
@@ -197,52 +228,256 @@ transition: fade
 layout: two-code-blocks
 ---
 
-# IPC in Web
+# A very basic example
 
 ::left::
 
-<div v-click="1">
 <div class="code-block-header font-mono">
-  app.ts
+  Node.js - sub process
 </div>
 
-```ts
-const resultEl = getElementById('result-label');
-const buttonEl = getElementById('calculate-button');
+```ts {*|1-4,16-17|5-9|11-15|*}
+// Listen for a message from the main process.
+process.on(
+  'message',
+  (message: AddNumbersMsg) => {
+    // Add the numbers together
+    const result = message.numbers.reduce(
+      (total, curr) => total + curr,
+      0,
+    );
 
-// Create the worker.
-const worker = new Worker('add.js');
-
-// Add a listener for the message containing the result.
-worker.addEventListener('message', (event) => {
-  resultEl.innerText = `Result: ${event.data}`;
-});
-
-// Send a message to the worker to initialize the work.
-buttonEl.addEventListener('click', (ev) => {
-  worker.postMessage({ x: 50, y: 100 });
-});
+    // Send the result back to the main process.
+    process.send({
+      type: 'add-numbers:result',
+      result,
+    } as AddResultMsg);
+  },
+);
 ```
-</div>
 
 ::right::
 
-<div v-click="2">
+<div v-click="4">
+
 <div class="code-block-header font-mono">
-  add.ts
+  Web - worker
 </div>
+
+```ts {*|1-4,16-17|5-9|11-15|*}
+// Listen for a message from the main process.
+addEventListener(
+  'message',
+  (event: MessageEvent<AddNumbersMsg>) => {
+    // Add the numbers together
+    const result = event.data.numbers.reduce(
+      (total, curr) => total + curr,
+      0,
+    );
+
+    // Send the result back to the main process.
+    postMessage({
+      type: 'add-numbers:result',
+      result,
+    } as AddResultMsg);
+  },
+);
+```
+
+</div>
+
+---
+transition: fade
+layout: statement
+---
+
+# Even across runtimes, IPC uses the same fundamentals.
+
+<div class="text-xs text-center">Examples will focus on Node.js now since it is less verbose :)</div>
+
+---
+transition: fade
+layout: default
+---
+
+# Let's make a slight adjustment...
+
+<div v-click="1">
+We have a new message! Our worker process now emits a message with metrics every 60 seconds.
+</div>
+
+````md magic-move
+```ts
+// Message schema for main process -> sub process message with numbers to add.
+interface AddNumbersMsg {
+  type: 'add-numbers';
+  numbers: number[];
+}
+
+// Message schema for sub process -> main process message with the result.
+interface AddResultMsg {
+  type: 'add-numbers:result',
+  result: number;
+}
+```
 
 ```ts
-// Listen for a message from the main process.
-addEventListener('message', (event) => {
-  // Do some serious work.
-  const result = event.x + event.y;
+// Message schema for main process -> sub process message with numbers to add.
+interface AddNumbersMsg {
+  type: 'add-numbers';
+  numbers: number[];
+}
 
-  // Send the result back to the main thread.
-  postMessage(result);
-});
+// Message schema for sub process -> main process message with the result.
+interface AddResultMsg {
+  type: 'add-numbers:result',
+  result: number;
+}
+
+// Message schema for sub process -> main process message with metrics
+interface WorkerMetricsMsg {
+  type: 'worker-metrics',
+  uptime: string;
+  totalCalculations: number;
+}
 ```
-</div>
+````
+
+---
+transition: fade
+layout: default
+---
+
+# Revisiting our main process
+
+````md magic-move
+```ts {*|6-9}
+import { fork } from 'node:child_process';
+
+// Create a sub-process for the heavy task.
+const taskProcess = fork('./add.js');
+
+// Add a listener for the result of the task.
+taskProcess.on('message', (message: AddResultMsg) => {
+  console.log(`Result: ${message.result}`);
+});
+
+// Send a message to the sub-process to start the task.
+taskProcess.send({
+  type: 'add-numbers',
+  numbers: [5, 10],
+} as AddNumbersMsg);
+```
+
+```ts
+import { fork } from 'node:child_process';
+
+// Create a sub-process for the heavy task.
+const taskProcess = fork('./add.js');
+
+// Add a listener for the result of the task.
+taskProcess.on('message', (message: AddResultMsg | WorkerMetricsMsg) => {
+  console.log(`Result: ${message.result}`);
+});
+
+// Send a message to the sub-process to start the task.
+taskProcess.send({
+  type: 'add-numbers',
+  numbers: [5, 10],
+} as AddNumbersMsg);
+```
+
+```ts
+import { fork } from 'node:child_process';
+
+// Create a sub-process for the heavy task.
+const taskProcess = fork('./add.js');
+
+// Add a listener for the result of the task.
+taskProcess.on('message', (message: AddResultMsg | WorkerMetricsMsg) => {
+  if (message.type === 'add-numbers:result') {
+    console.log(`Result: ${message.result}`);
+  } else if (message.type === 'worker-metrics') {
+    console.log(`Worker uptime: ${message.uptime}, ${message.totalCalculations} performed.`);
+  }
+});
+
+// Send a message to the sub-process to start the task.
+taskProcess.send({
+  type: 'add-numbers',
+  numbers: [5, 10],
+} as AddNumbersMsg);
+```
+````
+
+---
+transition: fade
+layout: center
+---
+
+# Now, some problems are starting to emerge
+
+1. As more events are added, the more complex our handlers become.
+2. Tracking the result of a message we have sent from one process to another is difficult.
+3. Typing of the `send`/`postMessage` does not really enforce anything.
+
+---
+transition: fade
+layout: default
+---
+
+<Transform :scale="0.5">
+
+```ts
+export interface IRSDKEvents {
+  simStarted: [startTime: number];
+  simEnded: [stopTime: number];
+  sessionInit: [id: string, startTime: number, sessionInfo: SessionInfo, trackInfo: TrackInfo, localDriver: DriverInfo];
+  sessionEnded: [id: string, endTime: number];
+  carSetupChanged: [setupName: string, settingsChanged: Partial<CarSetup>, carInfo: CarInfo];
+  lapStarted: [lapNumber: number, startTime: number, outLap: boolean];
+  lapCompleted: [lapNunber: number, endTime: number, inLap: boolean, lapInfo: LapInfo];
+  sectorCompleted: [sectorTime: number, lapNumber: number, isSessionFastest: boolean, isAllTimeFastest: boolean];
+  driverEnteredPits: [lapNumber: number];
+  driverExitedPits: [lapNumber: number, timeInPits: number, hadPitStop: boolean];
+  driverJoined: [carNumber: number, driver: DriverInfo];
+  driverLeft: [carNumber: number, driver: DriverInfo];
+  driverPositionChange: [driver1: DriverInfo, driver2: DriverInfo];
+  pitStopStarted: [startTime: number, prevStintInfo: StintInfo, driver: DriverInfo];
+  pitStopCompleted: [duration: number, changedTires: boolean, refuelAmount: number, driver: DriverInfo];
+  incidentOccurred: [penalty: number, newTotal: number, incidentType: IrsdkIncidentType, driver: DriverInfo];
+  qualifyingStateChanged: [newState: QualifyingState, oldState: QualifyingState];
+  raceStateChanged: [newState: RaceState, oldState: RaceState];
+  simTick: [tickNumber: number, tickTime: number, deltaTime: number, data: SimData];
+  raceFlagWaved: [flagType: IrsdkFlagType, driver: DriverInfo | undefined];
+  carDisqualified: [carNumber: number, reason: IrsdkDQReason, driver: DriverInfo];
+  fuelWarning: [fuelLeft: number, timeTilEmpty: number, lapsTilEmpty: number];
+  tireWarning: [tireLeft: number[], lapsTilDone: number];
+  strategyChange: [options: RaceStrategy[]];
+}
+
+export interface IRSDKFuncs {
+  isSimRunning;
+  startSDK: [];
+  stopSDK: [];
+  startEventDetection: [];
+  stopEventDetection: [];
+  waitForData: [];
+  getTelemetry: [];
+  getSessionData: [];
+  getWeekendInfo: [];
+  getSessionInfo: [];
+  getSplitInfo: [];
+  getCameraInfo: [];
+  getRadioInfo: [];
+  getDriverInfo: [];
+  getCarSetupInfo: [];
+  enableTelemetry: [];
+  restartTelemetry: [];
+}
+```
+
+</Transform>
 
 ---
 transition: fade
