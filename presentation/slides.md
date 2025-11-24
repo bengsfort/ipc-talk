@@ -40,6 +40,11 @@ layout: center
 
 </v-clicks>
 
+<!--
+- Touch on how JS is a single threaded language, and backing up the main queue leads to dropped inputs and jank.
+- Lifecycle management = SDK/SDK-like integrations that should be able to fail gracefully
+-->
+
 ---
 transition: fade
 layout: center
@@ -48,7 +53,7 @@ layout: center
 <h1 class="text-center">Available to a javascript near you!</h1>
 
 <div class="text-center">
-Usable in Node.js via Child Processes and Worker Threads
+Usable in Node.js via Child Processes
 </div>
 
 <div
@@ -129,6 +134,12 @@ Usable in browsers via the Worker API (Web Workers, Shared workers, etc)
   />
 </div>
 
+<!--
+- Technically communicating with Node.js Worker Threads and VM's is also IPC
+- TECHNICALLY communicating with iframes could KINDA be considered IPC but... not really
+- All of these patterns apply to things outside of these examples
+-->
+
 ---
 transition: fade
 layout: default
@@ -157,6 +168,11 @@ interface AddResultMsg {
 ```
 
 </v-clicks>
+
+<!--
+- Don't go too deep on the first bullet point, cause then the rest becomes awkward.
+- Next slide will be ONLY the MAIN PROCESS for both node and web!
+-->
 
 ---
 transition: fade
@@ -223,6 +239,12 @@ worker.postMessage({
 
 </div>
 
+<!--
+- Highlight `message` event!
+- Remember to click to highlight the lines when going through the examples!
+- Remember this slide is only main processes.
+-->
+
 ---
 transition: fade
 layout: two-code-blocks
@@ -286,6 +308,12 @@ addEventListener(
 
 </div>
 
+<!--
+- Remember to use the click highlighting!
+- Add listener for messages -> calculate -> send result back
+- Remind at the end that this  teaches us about the IPC fundamentals and that they go across runtimes.
+-->
+
 ---
 transition: fade
 layout: statement
@@ -293,7 +321,14 @@ layout: statement
 
 # Even across runtimes, IPC uses the same fundamentals.
 
-<div class="text-xs text-center">Examples will focus on Node.js now since it is less verbose :)</div>
+We're just working with event emitters and a pre-defined event.
+<p class="text-xs text-center">Examples will now focus on Node.js now since it is less verbose :)</p>
+
+
+<!--
+- Highlight using Node.js cause the examples are easier to fit on the screen :D
+- Will be adding an event on the next slide.
+-->
 
 ---
 transition: fade
@@ -336,12 +371,17 @@ interface AddResultMsg {
 
 // Message schema for sub process -> main process message with metrics
 interface WorkerMetricsMsg {
-  type: 'worker-metrics',
+  type: 'worker-metrics';
   uptime: string;
   totalCalculations: number;
 }
 ```
 ````
+
+<!--
+- We will not be going into the worker implementation here.
+- Checking our main process after this.
+-->
 
 ---
 transition: fade
@@ -410,70 +450,50 @@ taskProcess.send({
 ```
 ````
 
----
-transition: fade
-layout: center
----
-
-# Now, some problems are starting to emerge
-
-1. As more events are added, the more complex our handlers become.
-2. Tracking the result of a message we have sent from one process to another is difficult.
-3. Typing of the `send`/`postMessage` does not really enforce anything.
+<!--
+- Event listener is no longer accurate because we have a new message type.
+- Highlights listener first -> adds new type -> adds implementation.
+- Highlight the need to do this in every listener.
+-->
 
 ---
 transition: fade
-layout: default
+layout: statement
 ---
 
-<Transform :scale="0.5">
+# This doesn't seem too bad!
+
+Maybe it's a bit inconvenient, but...
+
+<!--
+- After the inconvenient bit, show the 3 messages we have, they are "not so bad"
+-->
+
+---
+transition: fade
+layout: full-screen-code
+---
+
+<Transform :scale="1">
 
 ```ts
-export interface IRSDKEvents {
-  simStarted: [startTime: number];
-  simEnded: [stopTime: number];
-  sessionInit: [id: string, startTime: number, sessionInfo: SessionInfo, trackInfo: TrackInfo, localDriver: DriverInfo];
-  sessionEnded: [id: string, endTime: number];
-  carSetupChanged: [setupName: string, settingsChanged: Partial<CarSetup>, carInfo: CarInfo];
-  lapStarted: [lapNumber: number, startTime: number, outLap: boolean];
-  lapCompleted: [lapNunber: number, endTime: number, inLap: boolean, lapInfo: LapInfo];
-  sectorCompleted: [sectorTime: number, lapNumber: number, isSessionFastest: boolean, isAllTimeFastest: boolean];
-  driverEnteredPits: [lapNumber: number];
-  driverExitedPits: [lapNumber: number, timeInPits: number, hadPitStop: boolean];
-  driverJoined: [carNumber: number, driver: DriverInfo];
-  driverLeft: [carNumber: number, driver: DriverInfo];
-  driverPositionChange: [driver1: DriverInfo, driver2: DriverInfo];
-  pitStopStarted: [startTime: number, prevStintInfo: StintInfo, driver: DriverInfo];
-  pitStopCompleted: [duration: number, changedTires: boolean, refuelAmount: number, driver: DriverInfo];
-  incidentOccurred: [penalty: number, newTotal: number, incidentType: IrsdkIncidentType, driver: DriverInfo];
-  qualifyingStateChanged: [newState: QualifyingState, oldState: QualifyingState];
-  raceStateChanged: [newState: RaceState, oldState: RaceState];
-  simTick: [tickNumber: number, tickTime: number, deltaTime: number, data: SimData];
-  raceFlagWaved: [flagType: IrsdkFlagType, driver: DriverInfo | undefined];
-  carDisqualified: [carNumber: number, reason: IrsdkDQReason, driver: DriverInfo];
-  fuelWarning: [fuelLeft: number, timeTilEmpty: number, lapsTilEmpty: number];
-  tireWarning: [tireLeft: number[], lapsTilDone: number];
-  strategyChange: [options: RaceStrategy[]];
+// Message schema for main process -> sub process message with numbers to add.
+interface AddNumbersMsg {
+  type: 'add-numbers';
+  numbers: number[];
 }
 
-export interface IRSDKFuncs {
-  isSimRunning;
-  startSDK: [];
-  stopSDK: [];
-  startEventDetection: [];
-  stopEventDetection: [];
-  waitForData: [];
-  getTelemetry: [];
-  getSessionData: [];
-  getWeekendInfo: [];
-  getSessionInfo: [];
-  getSplitInfo: [];
-  getCameraInfo: [];
-  getRadioInfo: [];
-  getDriverInfo: [];
-  getCarSetupInfo: [];
-  enableTelemetry: [];
-  restartTelemetry: [];
+// Message schema for sub process -> main process message with the result.
+interface AddResultMsg {
+  type: 'add-numbers:result',
+  result: number;
+}
+
+// Message schema for sub process -> main process message with metrics
+interface WorkerMetricsMsg {
+  type: 'worker-metrics';
+  uptime: string;
+  totalCalculations: number;
 }
 ```
 
@@ -481,648 +501,755 @@ export interface IRSDKFuncs {
 
 ---
 transition: fade
-layout: statement
+layout: full-screen-code
 ---
 
-# Ok? This looks easy?
-
-What are the problems with IPC in practice?
-
----
-transition: fade
-layout: default
----
-
-_Problems with IPC in practice_
-
-# 1. Structured data is needed to support multiple message types
-
-<v-clicks>
-
-- Once you have more than one message, you need to be able to identify each message.
-- If anything in your codebase can add listeners directly, this needs to happen in every listener.
-
-</v-clicks>
-
-<v-click>
+<Transform :scale="0.88">
 
 ````md magic-move
 ```ts
-// Expected events:
-// number
-worker.addEventListener('message', ({ data }: MessageEvent<number>) => {
-  doSomethingWithNumber(data);
-});
-```
+// Message schema for main process -> sub process message with numbers to add.
+interface AddNumbersMsg {
+  type: 'add-numbers';
+  numbers: number[];
+}
 
-```ts
-// Expected events:
-// number
-// string
-worker.addEventListener('message', ({ data }: MessageEvent<number | string>) => {
-  if (typeof data === 'string') {
-    doSomethingWithString(data);
-  } else {
-    doSomethingWithNumber(data);
-  }
-});
-```
+// Message schema for sub process -> main process message with the addition result.
+interface AddResultMsg {
+  type: 'add-numbers:result',
+  result: number;
+}
 
-```ts
-// TECHNICALLY works, but...
-// No self-documentation of what messages are available
-// No self-documentation of what each value even is
-worker.addEventListener('message', ({ data }: MessageEvent<number | string>) => {
-  if (typeof data === 'string') {
-    doSomethingWithString(data);
-  } else { // Hopefully those really are the only 2 events...
-    doSomethingWithNumber(data);
-  }
-});
-```
+// Message schema for main process -> sub process message with numbers to subtract.
+interface SubtractNumbersMsg {
+  type: 'subtract-numbers';
+  numbers: number[];
+}
 
-```ts
-// Let's give these some structure...
-type WorkerMessage = {
-  type: 'processed-file';  
-  value: string;           
-} | {
-  type: 'processing-duration';
-  value: number;
-};
+// Message schema for sub process -> main process message with subtraction result..
+interface SubtractResultMsg {
+  type: 'subtract-numbers:result';
+  result: number;
+}
 
-worker.addEventListener('message', ({ data }: MessageEvent<WorkerMessage>) => {
-  // ...
-});
-```
-
-```ts
-type WorkerMessage = {
-  type: 'processed-file';
-  value: string;
-} | {
-  type: 'processing-duration';
-  value: number;
-};
-
-worker.addEventListener('message', ({ data }: MessageEvent<WorkerMessage>) => {
-  if (data.type === 'processed-file') {
-    doSomethingWithString(data.value);
-  } else if (data.type === 'processing-duration') {
-    doSomethingWithNumber(data.value);
-  }
-});
-
-```
-
-```ts
-type WorkerMessage = {
-  type: 'processed-file'; // Now we have a reference to what messages there are...
-  value: string;          // And what they provide!
-} | {
-  type: 'processing-duration';
-  value: number;
-};
-
-worker.addEventListener('message', ({ data }: MessageEvent<WorkerMessage>) => {
-  if (data.type === 'processed-file') {
-    doSomethingWithString(data.value);
-  } else if (data.type === 'processing-duration') {
-    doSomethingWithNumber(data.value);
-  }
-});
-```
-````
-
-</v-click>
-
----
-transition: fade
----
-
-_Problems with IPC in practice_
-
-# 2. Mistakes and typos are silent runtime bugs
-
-<v-clicks>
-
-- An event name with a typo won't cause a runtime error -- it will just never trigger. Happy debugging!
-
-</v-clicks>
-
-<v-click>
-
-````md magic-move
-```ts {*|12}
-// Client
-worker.addEventListener('message', ({ data }) => {
-  if (data.type === 'processed-file') {
-    doSomethingWithString(data.value);
-  } else if (data.type === 'processing-duration') {
-    doSomethingWithNumber(data.value);
-  }
-});
-
-// Worker
-postMessage({
-  type: 'procesed-file',
-  value: 'pretend this is a file or something',
-});
-```
-```ts
-// Client
-worker.addEventListener('message', ({ data }) => {
-  if (data.type === 'processed-file') {
-    doSomethingWithString(data.value);
-  } else if (data.type === 'processing-duration') {
-    doSomethingWithNumber(data.value);
-  }
-});
-
-// Worker
-postMessage({
-  type: 'processed-file',
-  value: 'pretend this is a file or something',
-});
-```
-```ts {3}
-// Client
-worker.addEventListener('message', ({ data }) => {
-  if (data.type === 'procesed-file') {
-    doSomethingWithString(data.value);
-  } else if (data.type === 'processing-duration') {
-    doSomethingWithNumber(data.value);
-  }
-});
-
-// Worker
-postMessage({
-  type: 'processed-file',
-  value: 'pretend this is a file or something',
-});
-```
-
-```ts
-// Client
-worker.addEventListener('message', ({ data }) => {
-  if (data.type === 'processed-file') {
-    doSomethingWithString(data.value);
-  } else if (data.type === 'processing-duration') {
-    doSomethingWithNumber(data.value);
-  }
-});
-
-// Worker
-postMessage({
-  type: 'processed-file',
-  value: 'pretend this is a file or something',
-});
-```
-````
-
-</v-click>
-
----
-transition: fade
----
-
-_Problems with IPC in practice_
-
-# 2. Mistakes and typos are silent runtime bugs
-
-````md magic-move
-```ts
-// Client
-worker.addEventListener('message', ({ data }) => {
-  if (data.type === 'processed-file') {
-    doSomethingWithString(data.value);
-  } else if (data.type === 'processing-duration') {
-    doSomethingWithNumber(data.value);
-  }
-});
-
-// Worker
-postMessage({
-  type: 'processed-file',
-  value: 'pretend this is a file or something',
-});
-```
-
-```ts
-// Enum
-const MessageTypes = {
-  ProcessedFile: 'processed-file',
-  ProcessingDuration: 'processing-duration',
-} as const;
-
-// Client
-worker.addEventListener('message', ({ data }) => {
-  if (data.type === 'processed-file') {
-    doSomethingWithString(data.value);
-  } else if (data.type === 'processing-duration') {
-    doSomethingWithNumber(data.value);
-  }
-});
-
-// Worker
-postMessage({
-  type: 'processed-file',
-  value: 'pretend this is a file or something',
-});
-```
-
-```ts
-// Enum
-const MessageTypes = {
-  ProcessedFile: 'processed-file',
-  ProcessingDuration: 'processing-duration',
-} as const;
-
-// Client
-worker.addEventListener('message', ({ data }) => {
-  if (data.type === MessageTypes.ProcessedFile) {
-    doSomethingWithString(data.value);
-  } else if (data.type === MessageTypes.ProcessingDuration) {
-    doSomethingWithNumber(data.value);
-  }
-});
-
-// Worker
-postMessage({
-  type: MessageTypes.ProcessedFile,
-  value: 'pretend this is a file or something',
-});
-
-```
-````
-
----
-transition: fade
----
-
-_Problems with IPC in practice_
-
-# 2a. Mistakes and typos _can also_ be runtime errors
-
-<v-clicks>
-
-- Only the listener API's allow specifying a message's type.
-
-````md magic-move
-```ts
-// Strongly typed.
-worker.addEventListener('message', (message: MessageEvent<WorkerMessage>) => {});
-childProcess.on('message', (message: WorkerMessage) => {});
-
-// Not strongly typed.
-worker.postMessage({/*...*/});
-childProcess.send({/*...*/});
-```
-
-```ts
-// Strongly typed.
-worker.addEventListener('message', (message: MessageEvent<WorkerMessage>) => {});
-childProcess.on('message', (message: WorkerMessage) => {});
-
-// Not strongly typed.
-worker.postMessage({/*...*/} as WorkerMessage);
-childProcess.send({/*...*/} as WorkerMessage);
-```
-````
-
-</v-clicks>
-<v-clicks>
-
-- All messages go through Serialization, but are serialized differently by each runtime.
-  - Web Workers use the HTML structured clone algorithm.
-  - Node.js uses JSON by default.
-- Sometimes it is valuable to manually JSON serialize/deserialize to avoid surprises.
-  - In these cases, it's important to stay consistent so event handling does not get overly complex.
-
-</v-clicks>
-
----
-transition: fade
-layout: default
----
-
-_Problems with IPC in practice_
-
-# 3. Tracking IPC call output is clunky
-
-<v-clicks>
-
-- Sometimes we want to _call_ a function in another process then use the result.
-- This would require:
-  1. 'request' message from process A to process B
-  2. 'response' message from process B back to process A
-
-```ts
-// This triggers a function using `data` in another process,
-// and then resolves with the final result!
-const result = await executeSomeIpcFunction(data);
-```
-
-</v-clicks>
-
----
-transition: fade
-layout: default
----
-
-_Problems with IPC in practice_
-
-# 3. Tracking IPC call output is clunky
-
-<v-click>
-
-````md magic-move
-```ts
-const worker = new Worker('add.js');
-
-function addNumbers(x: number, y: number): Promise<number> {
-  // ...
+// Message schema for sub process -> main process message with metrics
+interface WorkerMetricsMsg {
+  type: 'worker-metrics';
+  uptime: string;
+  totalCalculations: number;
 }
 ```
 
 ```ts
-function addNumbers(x: number, y: number): Promise<number> {
-  return new Promise<number>((resolve) => {
-    // ...
-  });
+// Message schema for main process -> sub process message with numbers to add.
+interface AddNumbersMsg {
+  type: 'add-numbers';
+  numbers: number[];
+}
+
+// Message schema for main process -> sub process message with numbers to subtract.
+interface SubtractNumbersMsg {
+  type: 'subtract-numbers';
+  numbers: number[];
+}
+
+// Message schema for sub process -> main process message with a result.
+interface ResultMsg {
+  type: 'result';
+  operation: 'add' | 'subtract';
+  result: number;
+}
+
+// Message schema for sub process -> main process message with metrics
+interface WorkerMetricsMsg {
+  type: 'worker-metrics';
+  uptime: string;
+  totalCalculations: number;
 }
 ```
 
-```ts {3-6}
-function addNumbers(x: number, y: number): Promise<number> {
-  return new Promise<number>((resolve) => {
-    worker.postMessage({
-      type: 'add-numbers',
-      numbers: [x, y],
-    });
-  });
+```ts
+// Message schema for main process -> sub process message with numbers to add.
+interface AddNumbersMsg {
+  type: 'add-numbers';
+  numbers: number[];
 }
-```
 
-```ts {3-7}
-function addNumbers(x: number, y: number): Promise<number> {
-  return new Promise<number>((resolve) => {
-    const onWorkerMessage = ({ data }) => {
-     // ...
-    };
-
-    worker.addEventListener('message', onWorkerMessage);
-
-    worker.postMessage({
-      type: 'add-numbers',
-      numbers: [x, y],
-    });
-  });
+// Message schema for main process -> sub process message with numbers to subtract.
+interface SubtractNumbersMsg {
+  type: 'subtract-numbers';
+  numbers: number[];
 }
-```
 
-```ts {4-9|*}
-function addNumbers(x: number, y: number): Promise<number> {
-  return new Promise<number>((resolve) => {
-    const onWorkerMessage = ({ data }) => {
-      if (data.type !== 'add-numbers-result') {
-        return;
-      }
+// Message schema for main process -> sub process message with a result.
+interface MultiplyNumbersMsg {
+  type: 'multiply-numbers';
+  numbers: number[];
+}
 
-      worker.removeEventListener('message', onWorkerMessage);
-      resolve(data.result);
-    };
+// Message schema for sub process -> main process message with numbers to multiply.
+interface ResultMsg {
+  type: 'result';
+  operation: 'add' | 'subtract' | 'multiply';
+  result: number;
+}
 
-    worker.addEventListener('message', onWorkerMessage);
-
-    worker.postMessage({
-      type: 'add-numbers',
-      numbers: [x, y],
-    });
-  });
+// Message schema for sub process -> main process message with metrics
+interface WorkerMetricsMsg {
+  type: 'worker-metrics';
+  uptime: string;
+  totalCalculations: number;
 }
 ```
 ````
 
-</v-click>
+</Transform>
+
+---
+transition: fade
+layout: full-screen-code
+---
+
+<Transform :scale="0.7">
+
+```ts
+// Message schema for main process -> sub process message with numbers to add.
+interface AddNumbersMsg {
+  type: 'add-numbers';
+  numbers: number[];
+}
+
+// Message schema for main process -> sub process message with numbers to subtract.
+interface SubtractNumbersMsg {
+  type: 'subtract-numbers';
+  numbers: number[];
+}
+
+// Message schema for main process -> sub process message with a result.
+interface MultiplyNumbersMsg {
+  type: 'multiply-numbers';
+  numbers: number[];
+}
+
+// Message schema for sub process -> main process message with numbers to multiply.
+interface ResultMsg {
+  type: 'result';
+  operation: 'add' | 'subtract' | 'multiply';
+  result: number;
+}
+
+// Message schema for sub process -> main process message with metrics
+interface WorkerMetricsMsg {
+  type: 'worker-metrics';
+  uptime: string;
+  totalCalculations: number;
+}
+
+// Message schema for sub process -> main process message with synchronization status
+interface SyncStatusMsg {
+  type: 'sync-status-change';
+  status: 'syncing' | 'sync-complete';
+  lastSync: string;
+}
+```
+
+</Transform>
+
+---
+transition: fade
+layout: image
+image: /irsdk-definitions.png
+backgroundSize: contain
+---
+
+---
+transition: fade
+layout: two-cols
+---
+
+::default::
+
+<Transform scale="0.60">
+
+```ts
+// IPC Events
+"simStarted"
+"simEnded"
+"sessionInit"
+"sessionEnded"
+"carSetupChanged"
+"lapStarted"
+"lapCompleted"
+"sectorCompleted"
+"driverEnteredPits"
+"driverExitedPits"
+"driverJoined"
+"driverLeft"
+"driverPositionChange"
+"pitStopStarted"
+"pitStopCompleted"
+"incidentOccurred"
+"qualifyingStateChanged"
+"raceStateChanged"
+"simTick"
+"raceFlagWaved"
+"carDisqualified"
+"fuelWarning"
+"tireWarning"
+"strategyChange"
+
+// IPC Calls
+"isSimRunning"
+"startSDK"
+"stopSDK"
+"startEventDetection"
+"stopEventDetection"
+"waitForData"
+"getTelemetry"
+"getSessionData"
+"getWeekendInfo"
+"getSessionInfo"
+"getSplitInfo"
+"getCameraInfo"
+"getRadioInfo"
+"getDriverInfo"
+"getCarSetupInfo"
+"enableTelemetry"
+"restartTelemetry"
+```
+
+</Transform>
+
+::right::
+
+# It can get out of hand really fast
+
+- This is a real list of all of the IPC calls from a production app consuming Sim Racing data.
+- 24 unique IPC Events and 17 unique IPC Calls (That's 41 unique messages!)
+- With the patterns we have been using so far, each IPC Call would need a unique message as well.
 
 ---
 transition: fade
 layout: statement
 ---
 
-# There's a slight issue here...
+# Speaking of IPC calls...
+
 
 ---
 transition: fade
-layout: default
 ---
 
-_Problems with IPC in practice_
+# What if we want to use the result of IPC calls?
 
-# 3. Tracking IPC call output is clunky
+- Tracking the result is hard due to the generic event-based nature of IPC.
+
+<div v-click="1">
+
+- Ideally we could be able to use IPC calls like any other API.
+
+</div>
 
 ````md magic-move
-```ts {9}
-function addNumbers(x: number, y: number): Promise<number> {
-  return new Promise<number>((resolve) => {
-    const onWorkerMessage = ({ data }) => {
-      if (data.type !== 'add-numbers-result') {
-        return;
-      }
-
-      worker.removeEventListener('message', onWorkerMessage);
-      resolve(data.result); // How do we know this is the result for x and y?
-    };
-
-    worker.addEventListener('message', onWorkerMessage);
-
-    worker.postMessage({
-      type: 'add-numbers',
-      numbers: [x, y],
-    });
-  });
-}
-```
-
 ```ts
-function addNumbers(x: number, y: number): Promise<number> {
-  // ...
-}
+process.on('message', (message) => {
+  if (message.type !== 'result') {
+    return;
+  }
 
-calculateNumbersButton.addEventListener('click', async () => {
-  const x = xInputElement.valueAsNumber;
-  const y = yInputElement.valueAsNumber;
-
-  const result = await addNumbers(x, y);
-  resultLabel.innerText = `Result is ${result}!`;
+  // How do we know this is the result of 5 + 10?
+  console.log(`Addition result is ${message.result}`);
 });
 
-// Click 1:
-//    x = 5, y = 5. Result = 10. All good!
-```
-
-```ts
-function addNumbers(x: number, y: number): Promise<number> {
-  // ...
-}
-
-calculateNumbersButton.addEventListener('click', async () => {
-  const x = xInputElement.valueAsNumber;
-  const y = yInputElement.valueAsNumber;
-
-  const result = await addNumbers(x, y);
-  resultLabel.innerText = `Result is ${result}!`;
+// How do we tie the resulting message above to THIS call?
+process.send({
+  type: 'add-numbers',
+  numbers: [5, 10],
 });
-
-// Click 1:
-//    x = 5, y = 5. Result = 10. All good!
-// Click 2:
-//    x = 2, y = 1. Result = 3. Yay!
 ```
 
 ```ts
-function addNumbers(x: number, y: number): Promise<number> {
-  // ...
-}
+// This would handle the IPC messages internally, and resolve with
+// the result of THIS operation
+const result = await ipcAddNumbers(5, 10);
 
-calculateNumbersButton.addEventListener('click', async () => {
-  const x = xInputElement.valueAsNumber;
-  const y = yInputElement.valueAsNumber;
-
-  const result = await addNumbers(x, y);
-  resultLabel.innerText = `Result is ${result}!`;
-});
-
-// Click 1:
-//    x = 5, y = 5. Result = 10. All good!
-// Click 2 (before click 1 resolves):
-//    x = 2, y = 1.
-```
-
-```ts
-function addNumbers(x: number, y: number): Promise<number> {
-  // ...
-}
-
-calculateNumbersButton.addEventListener('click', async () => {
-  const x = xInputElement.valueAsNumber;
-  const y = yInputElement.valueAsNumber;
-
-  const result = await addNumbers(x, y);
-  resultLabel.innerText = `Result is ${result}!`;
-});
-
-// Click 1:
-//    x = 5, y = 5. Result = 10. All good!
-// Click 2 (before click 1 resolves):
-//    x = 2, y = 1. Result = 10. Uh oh!
-```
-
-```ts
-function addNumbers(x: number, y: number): Promise<number> {
-  return new Promise<number>((resolve) => {
-    const onWorkerMessage = ({ data }) => {
-      if (data.type !== 'add-numbers-result') {
-        return;
-      }
-
-      worker.removeEventListener('message', onWorkerMessage);
-      resolve(data.result);
-    };
-
-    worker.addEventListener('message', onWorkerMessage);
-
-    worker.postMessage({
-      type: 'add-numbers',
-      numbers: [x, y],
-    });
-  });
-}
-```
-
-```ts {2}
-function addNumbers(x: number, y: number): Promise<number> {
-  const requestId = `${x}:${y}`;
-  return new Promise<number>((resolve) => {
-    const onWorkerMessage = ({ data }) => {
-      if (data.type !== 'add-numbers-result') {
-        return;
-      }
-
-      worker.removeEventListener('message', onWorkerMessage);
-      resolve(data.result);
-    };
-
-    worker.addEventListener('message', onWorkerMessage);
-
-    worker.postMessage({
-      type: 'add-numbers',
-      numbers: [x, y],
-    });
-  });
-}
-```
-
-```ts {2,4-11,15-19|*}
-function addNumbers(x: number, y: number): Promise<number> {
-  const requestId = `${x}:${y}`;
-  return new Promise<number>((resolve) => {
-    const onWorkerMessage = ({ data }) => {
-      if (requestId !== data.requestId || data.type !== 'add-numbers-result') {
-        return;
-      }
-
-      worker.removeEventListener('message', onWorkerMessage);
-      resolve(data.result);
-    };
-
-    worker.addEventListener('message', onWorkerMessage);
-
-    worker.postMessage({
-      type: 'add-numbers',
-      numbers: [x, y],
-      requestId,
-    });
-  });
-}
+// That way we can use it naturally like an API
+console.log(result); // 10
 ```
 ````
-
----
-transition: fade
-layout: default
----
-
-_Problems with IPC in practice_
-
-# 3. Tracking IPC call output is clunky
-
-
-- This doesn't even cover every edge case for a good UX. For example:
-  - Timeouts
-  - Errors
-
-<v-clicks>
-
-- AND this would need to be replicated separately for every _IPC call_ that you have.
-
-</v-clicks>
 
 ---
 transition: fade
 layout: center
 ---
 
-# Problems with IPC in practice
+# Now, some problems are starting to emerge
 
-1. Structured data is needed to support multiple message types
-2. Mistakes and typos are silent runtime bugs (and sometimes crashes)
-3. Tracking IPC call output is clunky
+<v-clicks>
+
+1. As more events are added, the more complex our handlers become.
+2. Typing of the `send`/`postMessage` does not really enforce anything.
+3. Tracking the result of a message we have sent from one process to another is difficult.
+
+</v-clicks>
+
+<!--
+- There were 41 unique messages in the racing app example.
+- Remember all of this stuff must happen in all handlers!
+- We saw the typing issue passively. If we forget the assertion and have a typo, it is a silent runtime bug.
+-->
 
 ---
 transition: fade
 layout: statement
 ---
 
-# How can we improve this?
+# So how do we make this sane?
+
+<!--
+- How do we make this practical?
+- How do we not lose our hair?
+-->
+
+---
+transition: fade
+layout: default
+---
+
+# Let's start by fixing events
+
+1. <span v-mark.underline.blue>As more events are added, the more complex our handlers become.</span>
+2. Typing of the `send`/`postMessage` does not really enforce anything.
+3. Tracking the result of a message we have sent from one process to another is difficult.
+
+---
+transition: fade
+layout: default
+---
+
+# Fixing event handling
+
+- We want to make sure that all events follow the same schema, so we can reliably detect and handle them.
+- Let's also make a placeholder type for callbacks consuming these events, as well.
+
+```ts
+// Schema for all IPC events.
+interface IPCEvent {
+  eventName: string;
+  payload: any;
+}
+
+// Generic function type.
+type EventListenerCb = (event: IPCEvent) => void;
+```
+
+
+---
+transition: fade
+layout: default
+---
+
+# Fixing event handling
+
+- We also want to wrap our worker to ensure we have a single main access point.
+
+<v-clicks>
+
+- This way we can control listener lifetimes and allow listeners to opt-in to specific events without worrying about boilerplate.
+- Since the IPC API's are so similar, we can draft a typescript interface that we can then implement for whatever runtime we need.
+- Strict typing will come later.
+
+</v-clicks>
+
+<v-click>
+
+```ts
+// Our base event emitter API.
+//
+// Event name will map to our messages `type` fields, and the listeners will
+// get called with the messages themselves.
+interface WorkerEventEmitter {
+  addListener(eventName: string, listener: EventListenerCb): void;
+  removeListener(eventName: string, listener: EventListenerCb): void;
+  dispatch(eventName: string, payload: any): void;
+  cleanup(): void;
+}
+```
+
+</v-click>
+
+---
+transition: fade
+layout: Statement
+---
+
+# Are we really creating an event emitter for an event emitter?
+
+<v-click>Yes.</v-click>
+
+<!--
+- Go over benefits.
+  - Easier cleanup when killing the process
+  - Less boilerplate-per-listener
+  - Process reference stays clean
+- Plus typing benefits, soon to come..
+-->
+
+---
+transition: fade
+layout: default
+---
+
+Fixing event handling
+
+# Implementing a basic event emitter
+
+````md magic-move
+```ts
+// Our base event emitter API.
+//
+// Event name will map to our messages `type` fields, and the listeners will
+// get called with the messages themselves.
+interface WorkerEventEmitter {
+  addListener(eventName: string, listener: EventListenerCb): void;
+  removeListener(eventName: string, listener: EventListenerCb): void;
+  dispatch(eventName: string, payload: any): void;
+  cleanup(): void;
+}
+```
+
+```ts
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {},
+    removeListener: (eventName: string, listener: EventListenerCb) => {},
+    dispatch: (eventName: string, payload: any) => {},
+    cleanup: () => {},
+  };
+}
+```
+
+```ts
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  // We want to use Set here, since it handles de-duplication for us.
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {},
+    removeListener: (eventName: string, listener: EventListenerCb) => {},
+    dispatch: (eventName: string, payload: any) => {},
+    cleanup: () => {},
+  };
+}
+```
+
+```ts {*|5}
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {},
+    removeListener: (eventName: string, listener: EventListenerCb) => {},
+    dispatch: (eventName: string, payload: any) => {},
+    cleanup: () => {},
+  };
+}
+```
+
+```ts
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {
+      // Create a Set for the event if it doesn't yet exist.
+      if (typeof listenerMap[eventName] === 'undefined') {
+        listenerMap[eventName] = new Set();
+      }
+    
+      // Add the listener to the Set for this event.
+      listeners[eventName].add(listener);
+    },
+    removeListener: (eventName: string, listener: EventListenerCb) => {},
+    dispatch: (eventName: string, payload: any) => {},
+    cleanup: () => {},
+  };
+}
+```
+
+```ts {*|6}
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {},
+    dispatch: (eventName: string, payload: any) => {},
+    cleanup: () => {},
+  };
+}
+```
+
+```ts
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {
+      // If there are not any listeners for this event, we don't need to do anything.
+      if (typeof listenerMap[eventName] === 'undefined') {
+        return;
+      }
+
+      // Remove the listener from the Set for this event.
+      listenerMap[eventName].delete(listener);
+    },
+    dispatch: (eventName: string, payload: any) => {},
+    cleanup: () => {},
+  };
+}
+```
+
+```ts {*|7}
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {},
+    cleanup: () => {},
+  };
+}
+```
+
+```ts
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {
+      const message: IPCEvent = {
+        eventName,
+        payload,
+      };
+
+      // Structure and dispatch the message to the worker.
+      worker.send(message);
+    },
+    cleanup: () => {},
+  };
+}
+```
+
+```ts
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {},
+  };
+}
+```
+````
+
+---
+transition: fade
+layout: default
+---
+
+Fixing event handling
+
+# Re-cap
+
+<v-clicks>
+
+- Wrap out worker and expose an event emitter-like API
+- Create a map for storing listeners for specific events
+- `addListener` -> Store the listener with the list of callbacks for the given event.
+- `removeListener` -> Remove the listener from the list of callbacks for the given event.
+- `dispatch` -> Take the event name and payload and 'send' them through the worker.
+
+</v-clicks>
+
+<!--
+- There are other design choices you can make, and features you could add, but we are keeping it simple.
+-->
+
+---
+transition: fade
+layout: default
+---
+
+Fixing event handling
+
+# A note about our event emitter...
+
+<v-clicks>
+
+- This implementation is intentionally basic
+- If you want more features, or don't feel comfortable maintaining your own event emitter, use a library with type support!
+  - [eventemitter3](https://github.com/primus/eventemitter3)
+  - [EventEmitter from 'node:events'](https://nodejs.org/en/learn/asynchronous-work/the-nodejs-event-emitter)
+- Now we need to hook up our event emitter 
+
+</v-clicks>
+
+---
+transition: fade
+layout: default
+---
+
+Fixing event handling
+
+# Hooking up our event emitter
+
+````md magic-move
+```ts {*|1}
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {},
+  };
+}
+```
+
+```ts
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  // Create a callback we can reference directly so that we can remove it later.
+  const handleWorkerMessage = (message: IPCEvent) => {
+    // ...
+  };
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {},
+  };
+}
+```
+
+```ts
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  // ...
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {
+      // Remove our message handler.
+      worker.off('message', handleWorkerMessage);
+    },
+  };
+}
+```
+
+```ts
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  // ...
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {
+      // Remove our message handler.
+      worker.off('message', handleWorkerMessage);
+
+      // Remove all saved listeners so everything can be cleaned up.
+      for (const eventName of Object.keys(listenerMap)) {
+        listenerMap[eventName].clear();
+      }
+    },
+  };
+}
+```
+
+```ts
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  const handleWorkerMessage = (message: IPCEvent) => {
+    // ...
+  };
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {/* ... */},
+  };
+}
+```
+
+```ts
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  const handleWorkerMessage = (message: IPCEvent) => {
+    // Make sure we have an event name to check against.
+    if (typeof message.eventName !== 'string') {
+      return;
+    }
+  };
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {/* ... */},
+  };
+}
+```
+
+```ts
+export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  const handleWorkerMessage = (message: IPCEvent) => {
+    if (typeof message.eventName !== 'string') {
+      return;
+    }
+
+    // Call each callback with the payload for this event (if they exist).
+    const { eventName, payload } = message;
+    listeners[eventName]?.forEach((listener) => listener(payload));
+  };
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {/* ... */},
+  };
+}
+```
+````

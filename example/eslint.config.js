@@ -1,12 +1,28 @@
+import path from 'node:path';
 import bengsfort from '@bengsfort/eslint-config-flat';
 
 /** @type {import('eslint').Linter.Config} */
 export default [
   {
-    ignores: ['dist/'],
+    ignores: ['./dist/'],
   },
   {
-    files: ['./lib/**/*.ts', './sandbox/src/**/*.ts'],
+    files: [
+      './src/**/*.ts',
+    ],
+    ignores: [
+      './src/node/'
+    ],
+    ...bengsfort.configs.strictTypeChecked(
+      path.join(import.meta.dirname, 'tsconfig.json')
+    ),
   },
-  ...bengsfort.configs.strictTypeChecked(import.meta.dirname),
+  {
+    files: [
+      './src/node/**/*.ts',
+    ],
+    ...bengsfort.configs.strictTypeChecked(
+      path.join(import.meta.dirname, 'tsconfig.node.json')
+    ),
+  },
 ];
