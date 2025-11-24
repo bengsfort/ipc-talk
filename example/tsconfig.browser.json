@@ -2,17 +2,17 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "module": "nodenext",
-    "lib": ["ES2022"],
-    "types": ["@types/node"],
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
     "skipLibCheck": true,
 
-    /* Compilation */
-    "moduleResolution": "nodenext",
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
-    "noEmit": false,
-    "outDir": "./dist",
+    "noEmit": true,
 
     /* Linting */
     "strict": true,

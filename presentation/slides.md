@@ -169,7 +169,7 @@ interface AddResultMsg {
 
 </v-clicks>
 
-<!--
+<!--1
 - Don't go too deep on the first bullet point, cause then the rest becomes awkward.
 - Next slide will be ONLY the MAIN PROCESS for both node and web!
 -->
@@ -880,10 +880,10 @@ interface WorkerEventEmitter {
 
 ---
 transition: fade
-layout: Statement
+layout: statement
 ---
 
-# Are we really creating an event emitter for an event emitter?
+# Are we really creating<br />an event emitter for<br />an event emitter?
 
 <v-click>Yes.</v-click>
 
@@ -900,7 +900,7 @@ transition: fade
 layout: default
 ---
 
-Fixing event handling
+<div class="section-label">Fixing event handling</div>
 
 # Implementing a basic event emitter
 
@@ -919,7 +919,7 @@ interface WorkerEventEmitter {
 ```
 
 ```ts
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   return {
@@ -932,7 +932,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   // We want to use Set here, since it handles de-duplication for us.
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
@@ -946,7 +946,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts {*|5}
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   return {
@@ -959,7 +959,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   return {
@@ -970,7 +970,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
       }
     
       // Add the listener to the Set for this event.
-      listeners[eventName].add(listener);
+      listenerMap[eventName].add(listener);
     },
     removeListener: (eventName: string, listener: EventListenerCb) => {},
     dispatch: (eventName: string, payload: any) => {},
@@ -980,7 +980,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts {*|6}
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   return {
@@ -993,7 +993,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   return {
@@ -1014,7 +1014,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts {*|7}
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   return {
@@ -1027,7 +1027,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   return {
@@ -1039,8 +1039,8 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
         payload,
       };
 
-      // Structure and dispatch the message to the worker.
-      worker.send(message);
+      // Dispatch the message to the worker.
+      worker.send?.(message);
     },
     cleanup: () => {},
   };
@@ -1048,7 +1048,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   return {
@@ -1066,14 +1066,14 @@ transition: fade
 layout: default
 ---
 
-Fixing event handling
+<div class="section-label">Fixing event handling</div>
 
 # Re-cap
 
 <v-clicks>
 
-- Wrap out worker and expose an event emitter-like API
-- Create a map for storing listeners for specific events
+- Wrap our worker and expose an event emitter-like API
+- Create a map for storing listeners of specific events
 - `addListener` -> Store the listener with the list of callbacks for the given event.
 - `removeListener` -> Remove the listener from the list of callbacks for the given event.
 - `dispatch` -> Take the event name and payload and 'send' them through the worker.
@@ -1089,7 +1089,7 @@ transition: fade
 layout: default
 ---
 
-Fixing event handling
+<div class="section-label">Fixing event handling</div>
 
 # A note about our event emitter...
 
@@ -1108,13 +1108,13 @@ transition: fade
 layout: default
 ---
 
-Fixing event handling
+<div class="section-label">Fixing event handling</div>
 
 # Hooking up our event emitter
 
 ````md magic-move
 ```ts {*|1}
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   return {
@@ -1127,7 +1127,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   // Create a callback we can reference directly so that we can remove it later.
@@ -1147,7 +1147,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   // ...
@@ -1165,7 +1165,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   // ...
@@ -1188,7 +1188,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   const handleWorkerMessage = (message: IPCEvent) => {
@@ -1207,7 +1207,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   const handleWorkerMessage = (message: IPCEvent) => {
@@ -1229,7 +1229,7 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 ```
 
 ```ts
-export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitter {
+export function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   const handleWorkerMessage = (message: IPCEvent) => {
@@ -1237,9 +1237,9 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
       return;
     }
 
-    // Call each callback with the payload for this event (if they exist).
-    const { eventName, payload } = message;
-    listeners[eventName]?.forEach((listener) => listener(payload));
+    // Call each saved callback, passing it the event (if they exist).
+    const { eventName } = message;
+    listenerMap[eventName]?.forEach((listener) => listener(message));
   };
 
   worker.on('message', handleWorkerMessage);
@@ -1253,3 +1253,916 @@ export function createWorkerEventEmitter(worker: ChildProcess): WorkerEventEmitt
 }
 ```
 ````
+
+---
+transition: fade
+layout: two-code-blocks
+---
+
+# So now where are we?
+
+::left::
+
+<div class="code-block-header font-mono">
+  before
+</div>
+
+```ts
+import { fork } from 'node:child_process';
+
+// Create a sub-process for the heavy task.
+const taskProcess = fork('./add.js');
+
+// Add a listener for the result of the task.
+taskProcess.on(
+  'message', (message: ResultMsg | WorkerMetricsMsg) => {
+    if (message.type === 'result') {
+      // handle result message
+    } else if (message.type === 'worker-metrics') {
+      // handle metrics message
+    }
+  },
+);
+
+// Send a message to the sub-process to start the task.
+taskProcess.send({
+  type: 'add-numbers',
+  numbers: [5, 10],
+} as AddNumbersMsg);
+```
+
+::right::
+
+<div class="code-block-header font-mono">
+  after
+</div>
+
+```ts
+import { fork } from 'node:child_process';
+
+// Create a sub-process for the heavy task.
+const taskProcess = fork('./add.js');
+const ipcEvents = createWorkerEventEmitter(taskProcess);
+
+// Add listeners.
+ipcEvents.addListener('result', (event) => {
+  // handle result message
+});
+
+ipcEvents.addListener('worker-metrics', (event) => {
+  // handle metrics message
+});
+
+// Send a message to the sub-process to start the task.
+ipcEvents.dispatch('add-numbers', {
+  numbers: [5, 10]
+});
+```
+
+---
+transition: fade
+layout: default
+---
+
+# Next, let's fix those types.
+
+1. ~~As more events are added, the more complex our handlers become.~~
+2. <span v-mark.underline.blue>Typing of the `send`/`postMessage` does not really enforce anything.</span>
+3. Tracking the result of a  message we have sent from one process to another is difficult.
+
+
+---
+transition: fade
+layout: quote
+---
+
+# <strong>Warning:<br />You are about to see a lot of generics.</strong>
+
+Please look away for the remainder of the talk if you have generics-phobia.
+
+---
+transition: fade
+layout: default
+---
+
+<div class="section-label">Adding type safety</div>
+
+# Typing event systems
+
+<v-clicks>
+
+- Effective Event system typing revolves around generics and type maps.
+- Our main goal is to tie the **name** of an event to it's **payload**.
+- This can be done with a type map (a big interface):
+  - The key is the **event name**
+  - The type for that key is the type of the **payload**.
+- Then we just use that type map to generate types!
+
+</v-clicks>
+
+---
+transition: fade
+layout: full-screen-code
+---
+
+```ts twoslash {maxHeight:'100%'}
+// A type map
+interface TypeMap {
+  eventA: {
+    foo: string;
+  };
+  eventB: {
+    bar: boolean;
+  }
+}
+```
+
+---
+transition: fade
+layout: full-screen-code
+---
+
+```ts twoslash {maxHeight:'100%'}
+// A type map
+interface TypeMap {
+  eventA: {
+    foo: string;
+  };
+  eventB: {
+    bar: boolean;
+  }
+}
+
+// Type Alias for the event names.
+type EventName<Map> = keyof Map;
+
+const validName: EventName<TypeMap> = 'eventA';
+const invalidName: EventName<TypeMap> = 'foo';
+```
+
+---
+transition: fade
+layout: full-screen-code
+---
+
+```ts twoslash {maxHeight:'100%'}
+// A type map
+interface TypeMap {
+  eventA: {
+    foo: string;
+  };
+  eventB: {
+    bar: boolean;
+  }
+}
+
+// Type Alias for the event names.
+type EventName<Map> = keyof Map;
+
+// Type Alias for event payloads.
+type EventPayload<Map, Name extends EventName<Map> = EventName<Map>> =
+  Map[Name] extends Record<string, unknown>
+    ? Map[Name]
+    : never;
+
+```
+
+---
+transition: fade
+layout: full-screen-code
+---
+
+```ts twoslash {maxHeight:'100%'}
+// A type map
+interface TypeMap {
+  eventA: {
+    foo: string;
+  };
+  eventB: {
+    bar: boolean;
+  }
+}
+
+// Type Alias for the event names.
+type EventName<Map> = keyof Map;
+
+// Type Alias for event payloads.
+type EventPayload<Map, Name extends EventName<Map> = EventName<Map>> =
+  Map[Name] extends Record<string, unknown>   // Make a TS 'if', checking that the value is object-like
+    ? Map[Name]                               // It is! Return it!
+    : never;                                  // It's invalid. The value will be `never`, providing user feedback. 
+
+const correctPayload: EventPayload<TypeMap> = {
+  foo: 'foo is correct!',
+};
+
+const incorrectPayload: EventPayload<TypeMap, 'eventB'> = {
+  bar: 42,
+};
+```
+
+---
+transition: fade
+layout: statement
+---
+
+# That's everything we need!
+
+Let's go back to our messages.
+
+---
+transition: fade
+layout: default
+---
+
+<div class="section-label">Adding type safety</div>
+
+# Making our wrapper type-aware
+
+````md magic-move
+```ts
+// Message schema for sub process -> main process message with a result.
+interface ResultMsg {
+  type: 'result';
+  operation: 'add' | 'subtract' | 'multiply';
+  result: number;
+}
+
+// Message schema for sub process -> main process message with metrics
+interface WorkerMetricsMsg {
+  type: 'worker-metrics';
+  uptime: string;
+  totalCalculations: number;
+}
+```
+
+```ts
+interface IPCEventMap {
+  'result': {
+    operation: 'add' | 'subtract' | 'multiply';
+    result: number;
+  };
+  'worker-metrics': {
+    uptime: string;
+    totalCalculations: number;
+  };
+}
+```
+
+```ts
+// Base 'map' type.
+type EventMap = object;
+
+// Type alias for pulling the EventName from a type map.
+type EventName<Map extends EventMap> = keyof Map;
+
+// Type alias for pulling the event payload for a given event from a type map.
+type EventPayload<
+  Map extends EventMap,
+  Event extends EventName<Map> = EventName<Map>,
+> = Map[Event] extends Record<string, unknown>
+    ? Map[Event]
+    : never;
+```
+
+```ts
+// Schema for all IPC events.
+interface IPCEvent {
+  eventName: string;
+  payload: any;
+}
+
+// Generic function type.
+type EventListenerCb = (event: IPCEvent) => void;
+```
+
+```ts
+// Schema for all IPC events.
+interface IPCEvent<
+  Map extends EventMap,
+  Event extends EventName<Map> = EventName<Map>,
+> {
+  eventName: Event;
+  payload: EventPayload<Map, Event>;
+}
+
+// Generic function type.
+type EventListenerCb = (event: IPCEvent) => void;
+```
+
+```ts
+// Schema for all IPC events.
+interface IPCEvent<
+  Map extends EventMap,
+  Event extends EventName<Map> = EventName<Map>,
+> {
+  eventName: Event;
+  payload: EventPayload<Map, Event>;
+}
+
+// Generic function type.
+type EventListenerCb<
+  Map extends EventMap,
+  Event extends EventName<Map> = EventName<Map>,
+> = (event: IPCEvent<Map, Event>) => void;
+```
+
+```ts
+// Schema for all IPC events.
+interface IPCEvent<
+  Map extends EventMap,
+  Event extends EventName<Map> = EventName<Map>,
+> {
+  eventName: Event;
+  payload: EventPayload<Map, Event>;
+}
+
+// Generic function type.
+type EventListenerCb<
+  Map extends EventMap,
+  Event extends EventName<Map> = EventName<Map>,
+> = (event: IPCEvent<Map, Event>) => void;
+
+// Partial Event Listener map that enforces event <-> payload type safety.
+type EventListenerMap<Map extends EventMap> = {
+  [Event in keyof Map]?: Set<EventListenerCb<Map, Event>>;
+};
+```
+````
+
+<!--
+- Starting out with only the main process messages.
+-->
+
+---
+transition: fade
+layout: statement
+---
+
+# I'm sorry. Take a deep breath.
+
+TypeScript is a serious language. We're almost there.
+
+<!--
+- Time to go through the wrapper changes.
+-->
+
+---
+transition: fade
+layout: default
+---
+
+<div class="section-label">Adding type safety</div>
+
+# Making our wrapper type-aware
+
+````md magic-move
+```ts
+// Our base event emitter API.
+//
+// Event name will map to our messages `type` fields, and the listeners will
+// get called with the messages themselves.
+interface WorkerEventEmitter {
+  addListener(eventName: string, listener: EventListenerCb): void;
+  removeListener(eventName: string, listener: EventListenerCb): void;
+  dispatch(eventName: string, payload: any): void;
+  cleanup(): void;
+}
+```
+
+```ts
+// Our base event emitter API.
+//
+// Event name will map to our messages `type` fields, and the listeners will
+// get called with the messages themselves.
+interface WorkerEventEmitter<Map extends EventMap> {
+  addListener(eventName: string, listener: EventListenerCb): void;
+  removeListener(eventName: string, listener: EventListenerCb): void;
+  dispatch(eventName: string, payload: any): void;
+  cleanup(): void;
+}
+```
+
+```ts
+// Our base event emitter API.
+//
+// Event name will map to our messages `type` fields, and the listeners will
+// get called with the messages themselves.
+interface WorkerEventEmitter<Map extends EventMap> {
+  addListener<Event extends EventName<Map> = EventName<Map>>(
+    eventName: string,
+    listener: EventListenerCb
+  ): void;
+  removeListener(eventName: string, listener: EventListenerCb): void;
+  dispatch(eventName: string, payload: any): void;
+  cleanup(): void;
+}
+```
+
+```ts
+// Our base event emitter API.
+//
+// Event name will map to our messages `type` fields, and the listeners will
+// get called with the messages themselves.
+interface WorkerEventEmitter<Map extends EventMap> {
+  addListener<Event extends EventName<Map> = EventName<Map>>(
+    eventName: Event,
+    listener: EventListenerCb<Map, Event>
+  ): void;
+  removeListener(eventName: string, listener: EventListenerCb): void;
+  dispatch(eventName: string, payload: any): void;
+  cleanup(): void;
+}
+```
+
+```ts
+// Our base event emitter API.
+//
+// Event name will map to our messages `type` fields, and the listeners will
+// get called with the messages themselves.
+interface WorkerEventEmitter<Map extends EventMap> {
+  addListener<Event extends EventName<Map> = EventName<Map>>(
+    eventName: Event,
+    listener: EventListenerCb<Map, Event>
+  ): void;
+  removeListener<Event extends EventName<Map> = EventName<Map>>(
+    eventName: Event,
+    listener: EventListenerCb<Map, Event>,
+  ): void;
+  dispatch(eventName: string, payload: any): void;
+  cleanup(): void;
+}
+```
+
+```ts
+function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): WorkerEventEmitter {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  const handleWorkerMessage = (message: IPCEvent) => {/* ... */};
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {/* ... */},
+  };
+}
+```
+
+```ts
+function createWorkerEventEmitter<Map extends EventMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerEventEmitter<Map> {
+  const listenerMap: Record<string, Set<EventListenerCb>> = {};
+
+  const handleWorkerMessage = (message: IPCEvent) => {/* ... */};
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {/* ... */},
+  };
+}
+```
+
+```ts
+function createWorkerEventEmitter<Map extends EventMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerEventEmitter<Map> {
+  const listenerMap: EventListenerMap<Map> = {};
+
+  const handleWorkerMessage = (message: IPCEvent) => {/* ... */};
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {/* ... */},
+  };
+}
+```
+
+```ts
+function createWorkerEventEmitter<Map extends EventMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerEventEmitter<Map> {
+  const listenerMap: EventListenerMap<Map> = {};
+
+  const handleWorkerMessage = (message: IPCEvent) => {
+    // Ignore events that do not have an eventName.
+    if (typeof message.eventName !== 'string') {
+      return;
+    }
+
+    // Call each callback with the payload for this event (if they exist).
+    const { eventName } = message;
+    listenerMap[eventName]?.forEach((listener) => listener(message));
+  };
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {/* ... */},
+  };
+}
+```
+
+```ts
+function createWorkerEventEmitter<Map extends EventMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerEventEmitter<Map> {
+  const listenerMap: EventListenerMap<Map> = {};
+
+  const handleWorkerMessage = (message: IPCEvent<Map>) => {
+    // Ignore events that do not have an eventName.
+    if (typeof message.eventName !== 'string') {
+      return;
+    }
+
+    // Call each callback with the payload for this event (if they exist).
+    const eventName = message.eventName as EventName<Map>;
+    listenerMap[eventName]?.forEach((listener) => listener(message));
+  };
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {/* ... */},
+  };
+}
+```
+
+```ts {*|11-13}
+function createWorkerEventEmitter<Map extends EventMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerEventEmitter<Map> {
+  const listenerMap: EventListenerMap<Map> = {};
+
+  const handleWorkerMessage = (message: IPCEvent<Map>) => {/* ... */};
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
+    dispatch: (eventName: string, payload: any) => {/* ... */},
+    cleanup: () => {/* ... */},
+  };
+}
+```
+
+```ts {11-13|14}
+function createWorkerEventEmitter<Map extends EventMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerEventEmitter<Map> {
+  const listenerMap: EventListenerMap<Map> = {};
+
+  const handleWorkerMessage = (message: IPCEvent<Map>) => {/* ... */};
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName, listener) => {/* ... */},
+    removeListener: (eventName, listener) => {/* ... */},
+    dispatch: (eventName, payload) => {/* ... */},
+    cleanup: () => {/* ... */},
+  };
+}
+```
+
+```ts
+function createWorkerEventEmitter<Map extends EventMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerEventEmitter<Map> {
+  const listenerMap: EventListenerMap<Map> = {};
+
+  const handleWorkerMessage = (message: IPCEvent<Map>) => {/* ... */};
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName, listener) => {/* ... */},
+    removeListener: (eventName, listener) => {/* ... */},
+    dispatch: (eventName, payload) => {/* ... */},
+    cleanup: () => {
+      // Remove our message handler.
+      worker.off('message', handleWorkerMessage);
+
+      // Remove all saved listeners so everything can be cleaned up.
+      for (const eventName of Object.keys(listenerMap)) {
+        listenerMap[eventName].clear();
+      }
+    },
+  };
+}
+```
+
+```ts
+function createWorkerEventEmitter<Map extends EventMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerEventEmitter<Map> {
+  const listenerMap: EventListenerMap<Map> = {};
+
+  const handleWorkerMessage = (message: IPCEvent<Map>) => {/* ... */};
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName, listener) => {/* ... */},
+    removeListener: (eventName, listener) => {/* ... */},
+    dispatch: (eventName, payload) => {/* ... */},
+    cleanup: () => {
+      // Remove our message handler.
+      worker.off('message', handleWorkerMessage);
+
+      // Remove all saved listeners so everything can be cleaned up.
+      for (const eventName of Object.keys(listenerMap)) {
+        listenerMap[eventName as EventName<Map>]?.clear();
+      }
+    },
+  };
+}
+```
+````
+
+---
+transition: fade
+layout: default
+---
+
+# What does all of this get us?
+
+<Transform :scale="0.95">
+
+<video muted autoplay controls>
+  <source src="/type-safe-events.mp4" type="video/mp4">
+  Uh oh. The video didn't work!
+</video>
+
+</Transform>
+
+---
+transition: fade
+layout: default
+---
+
+# Finally, let's track IPC calls.
+
+1. ~~As more events are added, the more complex our handlers become.~~
+2. ~~Typing of the `send`/`postMessage` does not really enforce anything.~~
+3. <span v-mark.underline.blue>Tracking the result of a message we have sent from one process to another is difficult.</span>
+
+
+---
+transition: fade
+layout: quote
+---
+
+# Luckily, we can use a lot of what we have learned to make this happen.
+
+With some hard work and more generics, anything is possible.
+
+---
+transition: fade
+layout: default
+---
+
+# Tracking IPC calls
+
+<v-clicks>
+
+- Every _'call'_ should be treated like an API - you call it and get a promise, which resolves when it finishes.
+- For _'calls'_ specifically, we need to attach an ID to the message.
+- The other process should know to attach the ID to the result message so the result can be tracked.
+- We can use the same typing system to add full type safety.
+
+```ts
+const result = await ipcApi.callIpcFunction('add-numbers', {
+  numbers: [5, 15],
+});
+
+console.log(`Result is: ${result}`);
+```
+
+</v-clicks>
+
+---
+transition: fade
+layout: default
+---
+
+<div class="section-label">Tracking IPC calls</div>
+
+# Making a new IPC API
+
+````md magic-move
+```ts
+// Schema for IPC Call/Function messages -- this comes from the process MAKING the call.
+interface IpcRequestMessage {
+  requestId: number;
+  fnName: string;
+  args: Record<string, any>;
+}
+
+// Schema for IPC call/Function results -- this comes from the process RESPONDING to the call.
+type IpcResponseMessage = {
+  requestId: number;
+} & ({
+  result: any;
+} | {
+  error: string;
+});
+```
+
+```ts
+type ApiMap = object;
+
+type ApiFnName<Map extends ApiMap> = keyof Map;
+
+// Type extracting the function signature of an API in the API map.
+type ApiFnSignature = any;
+
+// Helper type extracting the parameters of an API function.
+type ApiFnArgs = any;
+
+// Helper type extracting the return type of an API function.
+type ApiFnReturnType = any;
+```
+
+```ts {0-7|9-13|15-20|*}
+// Type extracting the function signature of an API in the API map.
+type ApiFnSignature<
+  Map extends ApiMap,
+  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
+> = Map[ApiName] extends (args: any) => any
+    ? Map[ApiName]
+    : never;
+
+// Helper type extracting the parameters of an API function.
+type ApiFnArgs<
+  Map extends ApiMap,
+  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
+> = Parameters<ApiFnSignature<Map, ApiName>>;
+
+// Helper type extracting the return type of an API function.
+type ApiFnReturnType<
+  Map extends ApiMap,
+  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
+> = ReturnType<ApiFnSignature<Map, ApiName>>;
+```
+
+```ts
+// Schema for IPC Call/Function messages -- this comes from the process MAKING the call.
+interface IpcRequestMessage {
+  callType: 'request';
+  requestId: number;
+  fnName: string;
+  args: Record<string, any>;
+}
+
+// Schema for IPC call/Function results -- this comes from the process RESPONDING to the call.
+type IpcResponseMessage = {
+  callType: 'response';
+  requestId: number;
+} & ({
+  result: any;
+} | {
+  error: string;
+});
+```
+
+```ts
+// Schema for IPC Call/Function messages -- this comes from the process MAKING the call.
+interface IpcRequestMessage<
+  Map extends ApiMap,
+  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
+> {
+  callType: 'request';
+  requestId: number;
+  fnName: ApiName;
+  args: ApiFnArgs<Map, ApiName>;
+}
+
+// Schema for IPC call/Function results -- this comes from the process RESPONDING to the call.
+type IpcResponseMessage = {
+  callType: 'response';
+  requestId: number;
+} & ({
+  result: any;
+} | {
+  error: string;
+});
+```
+
+```ts
+// Schema for IPC Call/Function messages -- this comes from the process MAKING the call.
+interface IpcRequestMessage<
+  Map extends ApiMap,
+  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
+> {
+  callType: 'request';
+  requestId: number;
+  fnName: ApiName;
+  args: ApiFnArgs<Map, ApiName>;
+}
+
+// Schema for IPC call/Function results -- this comes from the process RESPONDING to the call.
+export type IpcResponseMessage<
+  Map extends ApiMap,
+  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
+> = {
+  callType: 'response';
+  requestId: number;
+} & ({
+  result: ApiFnReturnType<Map, ApiName>;
+} | {
+  error: string;
+});
+```
+````
+
+---
+transition: fade
+layout: quote
+---
+
+# Now that the helpers are out of the way, we can focus on the API.
+
+---
+transition: fade
+layout: default
+---
+
+<div class="section-label">Tracking IPC calls</div>
+
+# Making a new IPC API
+
+<v-clicks>
+
+- We only need one API because the 'implementation' of an API should always exist.
+- As in, it should be a part of the 'creation' of the API.
+
+</v-clicks>
+
+````md magic-move
+```ts
+// Base IPC Call API.
+interface WorkerIpcApi {
+  callIpcFunction(fnName: string, args: any): Promise<any>;
+}
+```
+
+```ts
+// Base IPC Call API.
+export interface WorkerIpcApi<Map extends ApiMap> {
+  callIpcFunction<Fn extends ApiFnName<Map> = ApiFnName<Map>>(
+    fnName: Fn,
+    args: ApiFnArgs<Map, Fn>
+  ): Promise<ApiFnReturnType<Map, Fn>>;
+}
+```
+````
+
+---
+transition: fade
+layout: default
+---
+
+<div class="section-label">Tracking IPC calls</div>
+
+# Making a new IPC API
+
+````md magic-move
+```ts
+// Base IPC Call API.
+interface WorkerIpcApi {
+  callIpcFunction(fnName: string, args: any): Promise<any>;
+}
+```
+
+```ts
+// Base IPC Call API.
+export interface WorkerIpcApi<Map extends ApiMap> {
+  callIpcFunction<Fn extends ApiFnName<Map> = ApiFnName<Map>>(
+    fnName: Fn,
+    args: ApiFnArgs<Map, Fn>
+  ): Promise<ApiFnReturnType<Map, Fn>>;
+}
+```
+````
+
+-- REDO THIS LAST SECTION. THE TYPES WERE FUCKED AND I HAD TO REDO THEM. --
+-- ALSO UPDATE EVENT SETUP TO ALSO HAVE THE WorkerEvents, ThisEvents PARADIGM!!! --
