@@ -55,28 +55,32 @@ export type ApiMap = object;
 
 export type ApiFnName<Map extends ApiMap> = keyof Map;
 
-export type ApiFnSignature<
+export type ApiFnDefinition<
   Map extends ApiMap,
-  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
-> = Map[ApiName] extends (args: any) => any
-    ? Map[ApiName]
-    : never;
+  ApiName extends keyof Map,
+> = Map[ApiName] extends (...args: any[]) => any
+  ? Map[ApiName]
+  : never;
 
 export type ApiFnArgs<
   Map extends ApiMap,
-  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
-> = Parameters<ApiFnSignature<Map, ApiName>>;
+  ApiName extends keyof Map,
+> = Parameters<ApiFnDefinition<Map, ApiName>>
 
 export type ApiFnReturnType<
   Map extends ApiMap,
-  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
-> = ReturnType<ApiFnSignature<Map, ApiName>>;
+  ApiName extends keyof Map = keyof Map,
+> = ReturnType<ApiFnDefinition<Map, ApiName>>
 
+export type ApiFnSignature<
+  Map extends ApiMap,
+  ApiName extends keyof Map = keyof Map,
+> = (args: ApiFnArgs<Map, ApiName>) => ApiFnReturnType<Map, ApiName>;
 
 // Schema for IPC Call/Function messages -- this comes from the process MAKING the call.
 export interface IpcRequestMessage<
   Map extends ApiMap,
-  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
+  ApiName extends keyof Map = keyof Map,
 > {
   callType: 'request';
   requestId: number;
@@ -91,22 +95,30 @@ export type IpcResponseMessage<
 > = {
   callType: 'response';
   requestId: number;
-} & ({
-  result: ApiFnReturnType<Map, ApiName>;
-  error: undefined;
-} | {
-  result: undefined;
-  error: string;
-});
+  result?: ApiFnReturnType<Map, ApiName>;
+  error?: string;
+};
 
+export type ApiRequestHandler<
+  Map extends ApiMap,
+  Fn extends ApiFnName<Map> = ApiFnName<Map>
+> = (...request: ApiFnArgs<Map, Fn>) => ApiFnReturnType<Map, Fn> | undefined;
 
+export type ApiHandlerMap<Map extends ApiMap> = {
+  [Fn in keyof Map]?: ApiRequestHandler<Map, Fn>;
+};
 
 /**
  * Base event emitter API.
  */
-export interface WorkerIpcApi<Map extends ApiMap> {
-  callIpcFunction<Fn extends ApiFnName<Map> = ApiFnName<Map>>(
+export interface WorkerIpcApi<WorkerApi extends ApiMap, ThisApi extends ApiMap> {
+  callIpcFunction<Fn extends ApiFnName<WorkerApi> = ApiFnName<WorkerApi>>(
     fnName: Fn,
-    ...args: ApiFnArgs<Map, Fn>
-  ): Promise<ApiFnReturnType<Map, Fn>>;
+    ...args: ApiFnArgs<WorkerApi, Fn>
+  ): Promise<ApiFnReturnType<WorkerApi, Fn>>;
+  registerIpcHandler<Fn extends ApiFnName<ThisApi> = ApiFnName<ThisApi>>(
+    fnName: Fn,
+    handler: ApiRequestHandler<ThisApi, Fn>,
+  ): void;
+  cleanup(): void;
 }

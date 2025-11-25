@@ -12,11 +12,8 @@ const taskPath = join(buildPath, './add.js');
 const taskProcess = fork(taskPath);
 
 const ipcEvents = createWorkerEventEmitter<IpcEventMap>(taskProcess);
-const ipcApi = createWorkerIpcApi<IpcApiMap>(taskProcess, () => {
-  throw new Error('No API provided');
-});
+const ipcApi = createWorkerIpcApi<IpcApiMap>(taskProcess);
 
-// Add a listener for the result of the task.
 ipcEvents.addListener('result', (event) => {
   console.log(`Result: ${event.payload}`);
 });
@@ -25,8 +22,6 @@ ipcEvents.addListener('worker-metrics', (event) => {
   console.log(`Uptime: ${event.payload.uptime}`);
 });
 
-const result = await ipcApi.callIpcFunction('add-numbers', {
-  numbers: [5, 10],
-});
+const result = await ipcApi.callIpcFunction('add-numbers', [5, 10]);
 
 console.log(`Result is: ${result}`);

@@ -11,10 +11,13 @@ import type {
   ApiFnReturnType,
   WorkerIpcApi,
   IpcResponseMessage,
+  ApiHandlerMap,
 } from "../common/types.js";
 
 import { createPromiseWithResolvers, type PromiseWithResolvers } from "../common/utils.js";
 
+// Worker Process Event Emitter API.
+// Wraps the given worker with a type-safe event emitter.
 export function createWorkerEventEmitter<
   WorkerEvents extends EventMap = EventMap,
   ThisEvents extends EventMap = EventMap,
@@ -79,76 +82,92 @@ export function createWorkerEventEmitter<
   };
 }
 
+// Worker Process IPC Call API.
+// Wraps the given worker with a type-safe IPC call manager.
 export function createWorkerIpcApi<
   WorkerApi extends ApiMap = ApiMap,
   ThisApi extends ApiMap = ApiMap
->(
-  worker: ChildProcess | NodeJS.Process,
-  apiHandler: (request: IpcRequestMessage<ThisApi>) => ApiFnReturnType<ThisApi>,
-): WorkerIpcApi<WorkerApi> {
+>(worker: ChildProcess | NodeJS.Process): WorkerIpcApi<WorkerApi, ThisApi> {
   const waitingRequests = new Map<
     number,
     PromiseWithResolvers<ApiFnReturnType<WorkerApi>>
   >();
-
+  const apiHandlers: ApiHandlerMap<ThisApi> = {};
   let idCounter = 0;
+  let connected = true;
 
+  // Handle response messages from the other process.
   const handleResponse = (response: IpcResponseMessage<WorkerApi>) => {
+    // Retrieve the promise. If there is none, we have an ID mismatch and ignore.
     const promise = waitingRequests.get(response.requestId);
-    // The promise somehow does not exist! Id Mismatch,
     if (!promise) {
       return;
     }
 
+    // Remove the request from our map since it is being handled.
     waitingRequests.delete(response.requestId);
 
+    // If we have a result, resolve the promise with it. Otherwise, reject the promise.
     if (typeof response.result !== 'undefined') {
       promise.resolve(response.result);
-      return;
-    } else if (typeof response.error !== 'undefined') {
-      promise.reject(response.error);
-      return;
+    } else {
+      promise.reject(response.error ?? "Invalid response from other process.");
     }
-
-    promise.reject('Invalid response from other process');
   };
 
+  // Handle incoming API requests.
   const handleRequest = (request: IpcRequestMessage<ThisApi>) => {
+    // Create our base response.
     const response: Partial<IpcResponseMessage<ThisApi>> = {
       callType: 'response',
       requestId: request.requestId,
     };
 
     try {
-      response.result = apiHandler(request);
+      // Attempt to retrieve a handler for this function.
+      // If it does not exist, throw an error.
+      const handler = apiHandlers[request.fnName];
+      if (!handler) {
+        throw new Error(`No API Handler defined for ${request.fnName.toString()}`);
+      }
+
+      // Store the result of calling the handler with the args in the response.
+      response.result = handler(...request.args);
       worker.send?.(response);
     } catch (err) {
+      // If there was an error, make sure we surface it in the response.
       response.error = JSON.stringify(err);
       worker.send?.(response);
     }
   };
 
-  worker.on(
-    'message',
-    (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {
-      // Ignore irrelevant messages.
-      if (
-        typeof message.requestId === 'undefined'
-        || typeof message.callType === 'undefined'
-      ) {
-        return;
-      }
+  const handleWorkerMessage = (
+    message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>
+  ) => {
+    // Ignore irrelevant messages.
+    if (
+      typeof message.requestId === 'undefined'
+      || typeof message.callType === 'undefined'
+    ) {
+      return;
+    }
 
-      if (message.callType === 'response') {
-        handleResponse(message);
-      } else if (message.callType === 'request') {
-        handleRequest(message);
-      }
-    },
-  );
+    // Handle responses and requests separately.
+    if (message.callType === 'response') {
+      handleResponse(message);
+    } else if (message.callType === 'request') {
+      handleRequest(message);
+    }
+  };
+
+  worker.on('message', handleWorkerMessage);
 
   return {
-    callIpcFunction(fnName, args) {
+    callIpcFunction: (fnName, ...args) => {
+      if (!connected) {
+        throw new Error('IPC not connected.');
+      }
+      
       // Create our request.
       const request: IpcRequestMessage<WorkerApi> = {
         callType: 'request',
@@ -166,6 +185,23 @@ export function createWorkerIpcApi<
 
       // Return the saved promise.
       return promiseWithResolvers.promise;
+    },
+
+    registerIpcHandler: (fnName, handler) => {
+      // Add the handler for the given function within our handler map.
+      apiHandlers[fnName] = handler;
+    },
+
+    cleanup: () => {
+      // Remove our message handler.
+      connected = false;
+      worker.off('message', handleWorkerMessage);
+
+      // Reject any existing requests that are waiting for a response.
+      waitingRequests.forEach((promise) => {
+        promise.reject('IPC Handler closing');
+      });
+      waitingRequests.clear();
     },
   };
 }
