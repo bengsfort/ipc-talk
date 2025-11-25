@@ -1635,7 +1635,7 @@ interface WorkerEventEmitter {
 //
 // Event name will map to our messages `type` fields, and the listeners will
 // get called with the messages themselves.
-interface WorkerEventEmitter<Map extends EventMap> {
+interface WorkerEventEmitter<WorkerEvents extends EventMap> {
   addListener(eventName: string, listener: EventListenerCb): void;
   removeListener(eventName: string, listener: EventListenerCb): void;
   dispatch(eventName: string, payload: any): void;
@@ -1648,8 +1648,8 @@ interface WorkerEventEmitter<Map extends EventMap> {
 //
 // Event name will map to our messages `type` fields, and the listeners will
 // get called with the messages themselves.
-interface WorkerEventEmitter<Map extends EventMap> {
-  addListener<Event extends EventName<Map> = EventName<Map>>(
+interface WorkerEventEmitter<WorkerEvents extends EventMap> {
+  addListener<Event extends EventName<WorkerEvents> = EventName<WorkerEvents>>(
     eventName: string,
     listener: EventListenerCb
   ): void;
@@ -1664,12 +1664,31 @@ interface WorkerEventEmitter<Map extends EventMap> {
 //
 // Event name will map to our messages `type` fields, and the listeners will
 // get called with the messages themselves.
-interface WorkerEventEmitter<Map extends EventMap> {
-  addListener<Event extends EventName<Map> = EventName<Map>>(
+interface WorkerEventEmitter<WorkerEvents extends EventMap> {
+  addListener<Event extends EventName<WorkerEvents> = EventName<WorkerEvents>>(
     eventName: Event,
-    listener: EventListenerCb<Map, Event>
+    listener: EventListenerCb<WorkerEvents, Event>
   ): void;
   removeListener(eventName: string, listener: EventListenerCb): void;
+  dispatch(eventName: string, payload: any): void;
+  cleanup(): void;
+}
+```
+
+```ts {*|14}
+// Our base event emitter API.
+//
+// Event name will map to our messages `type` fields, and the listeners will
+// get called with the messages themselves.
+interface WorkerEventEmitter<WorkerEvents extends EventMap> {
+  addListener<Event extends EventName<WorkerEvents> = EventName<WorkerEvents>>(
+    eventName: Event,
+    listener: EventListenerCb<WorkerEvents, Event>
+  ): void;
+  removeListener<Event extends EventName<WorkerEvents> = EventName<WorkerEvents>>(
+    eventName: Event,
+    listener: EventListenerCb<WorkerEvents, Event>,
+  ): void;
   dispatch(eventName: string, payload: any): void;
   cleanup(): void;
 }
@@ -1680,16 +1699,22 @@ interface WorkerEventEmitter<Map extends EventMap> {
 //
 // Event name will map to our messages `type` fields, and the listeners will
 // get called with the messages themselves.
-interface WorkerEventEmitter<Map extends EventMap> {
-  addListener<Event extends EventName<Map> = EventName<Map>>(
+interface WorkerEventEmitter<
+  WorkerEvents extends EventMap = EventMap,
+  ThisEvents extends EventMap = EventMap,
+> {
+  addListener<Event extends EventName<WorkerEvents> = EventName<WorkerEvents>>(
     eventName: Event,
-    listener: EventListenerCb<Map, Event>
+    listener: EventListenerCb<WorkerEvents, Event>
   ): void;
-  removeListener<Event extends EventName<Map> = EventName<Map>>(
+  removeListener<Event extends EventName<WorkerEvents> = EventName<WorkerEvents>>(
     eventName: Event,
-    listener: EventListenerCb<Map, Event>,
+    listener: EventListenerCb<WorkerEvents, Event>,
   ): void;
-  dispatch(eventName: string, payload: any): void;
+  dispatch<Event extends EventName<ThisEvents> = EventName<ThisEvents>>(
+    eventName: Event,
+    payload: EventPayload<ThisEvents, Event>
+  ): void;
   cleanup(): void;
 }
 ```
@@ -1712,9 +1737,12 @@ function createWorkerEventEmitter(worker: ChildProcess | NodeJS.Process): Worker
 ```
 
 ```ts
-function createWorkerEventEmitter<Map extends EventMap>(
+function createWorkerEventEmitter<
+  WorkerEvents extends EventMap = EventMap,
+  ThisEvents extends EventMap = EventMap,
+>(
   worker: ChildProcess | NodeJS.Process
-): WorkerEventEmitter<Map> {
+): WorkerEventEmitter<WorkerEvents, ThisEvents> {
   const listenerMap: Record<string, Set<EventListenerCb>> = {};
 
   const handleWorkerMessage = (message: IPCEvent) => {/* ... */};
@@ -1731,10 +1759,13 @@ function createWorkerEventEmitter<Map extends EventMap>(
 ```
 
 ```ts
-function createWorkerEventEmitter<Map extends EventMap>(
+function createWorkerEventEmitter<
+  WorkerEvents extends EventMap = EventMap,
+  ThisEvents extends EventMap = EventMap,
+>(
   worker: ChildProcess | NodeJS.Process
-): WorkerEventEmitter<Map> {
-  const listenerMap: EventListenerMap<Map> = {};
+): WorkerEventEmitter<WorkerEvents, ThisEvents> {
+  const listenerMap: EventListenerMap<WorkerEvents> = {};
 
   const handleWorkerMessage = (message: IPCEvent) => {/* ... */};
 
@@ -1750,10 +1781,13 @@ function createWorkerEventEmitter<Map extends EventMap>(
 ```
 
 ```ts
-function createWorkerEventEmitter<Map extends EventMap>(
+function createWorkerEventEmitter<
+  WorkerEvents extends EventMap = EventMap,
+  ThisEvents extends EventMap = EventMap,
+>(
   worker: ChildProcess | NodeJS.Process
-): WorkerEventEmitter<Map> {
-  const listenerMap: EventListenerMap<Map> = {};
+): WorkerEventEmitter<WorkerEvents, ThisEvents> {
+  const listenerMap: EventListenerMap<WorkerEvents> = {};
 
   const handleWorkerMessage = (message: IPCEvent) => {
     // Ignore events that do not have an eventName.
@@ -1768,50 +1802,46 @@ function createWorkerEventEmitter<Map extends EventMap>(
 
   worker.on('message', handleWorkerMessage);
 
-  return {
-    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
-    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
-    dispatch: (eventName: string, payload: any) => {/* ... */},
-    cleanup: () => {/* ... */},
-  };
+  return {/* ... */};
 }
 ```
 
 ```ts
-function createWorkerEventEmitter<Map extends EventMap>(
+function createWorkerEventEmitter<
+  WorkerEvents extends EventMap = EventMap,
+  ThisEvents extends EventMap = EventMap,
+>(
   worker: ChildProcess | NodeJS.Process
-): WorkerEventEmitter<Map> {
-  const listenerMap: EventListenerMap<Map> = {};
+): WorkerEventEmitter<WorkerEvents, ThisEvents> {
+  const listenerMap: EventListenerMap<WorkerEvents> = {};
 
-  const handleWorkerMessage = (message: IPCEvent<Map>) => {
+  const handleWorkerMessage = (message: IPCEvent<WorkerEvents>) => {
     // Ignore events that do not have an eventName.
     if (typeof message.eventName !== 'string') {
       return;
     }
 
     // Call each callback with the payload for this event (if they exist).
-    const eventName = message.eventName as EventName<Map>;
+    const eventName = message.eventName as EventName<WorkerEvents>;
     listenerMap[eventName]?.forEach((listener) => listener(message));
   };
 
   worker.on('message', handleWorkerMessage);
 
-  return {
-    addListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
-    removeListener: (eventName: string, listener: EventListenerCb) => {/* ... */},
-    dispatch: (eventName: string, payload: any) => {/* ... */},
-    cleanup: () => {/* ... */},
-  };
+  return {/* ... */};
 }
 ```
 
-```ts {*|11-13}
-function createWorkerEventEmitter<Map extends EventMap>(
+```ts {*|14-16}
+function createWorkerEventEmitter<
+  WorkerEvents extends EventMap = EventMap,
+  ThisEvents extends EventMap = EventMap,
+>(
   worker: ChildProcess | NodeJS.Process
-): WorkerEventEmitter<Map> {
-  const listenerMap: EventListenerMap<Map> = {};
+): WorkerEventEmitter<WorkerEvents, ThisEvents> {
+  const listenerMap: EventListenerMap<WorkerEvents> = {};
 
-  const handleWorkerMessage = (message: IPCEvent<Map>) => {/* ... */};
+  const handleWorkerMessage = (message: IPCEvent<WorkerEvents>) => {/* ... */
 
   worker.on('message', handleWorkerMessage);
 
@@ -1824,13 +1854,90 @@ function createWorkerEventEmitter<Map extends EventMap>(
 }
 ```
 
-```ts {11-13|14}
-function createWorkerEventEmitter<Map extends EventMap>(
+```ts {14-16|16}
+function createWorkerEventEmitter<
+  WorkerEvents extends EventMap = EventMap,
+  ThisEvents extends EventMap = EventMap,
+>(
   worker: ChildProcess | NodeJS.Process
-): WorkerEventEmitter<Map> {
-  const listenerMap: EventListenerMap<Map> = {};
+): WorkerEventEmitter<WorkerEvents, ThisEvents> {
+  const listenerMap: EventListenerMap<WorkerEvents> = {};
 
-  const handleWorkerMessage = (message: IPCEvent<Map>) => {/* ... */};
+  const handleWorkerMessage = (message: IPCEvent<WorkerEvents>) => {/* ... */};
+
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    addListener: (eventName, listener) => {/* ... */},
+    removeListener: (eventName, listener) => {/* ... */},
+    dispatch: (eventName, payload) => {/* ... */},
+    cleanup: () => {/* ... */},
+  };
+}
+```
+
+```ts 
+function createWorkerEventEmitter<
+  WorkerEvents extends EventMap = EventMap,
+  ThisEvents extends EventMap = EventMap,
+>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerEventEmitter<WorkerEvents, ThisEvents> {
+  // ...
+
+  return {
+    addListener: (eventName, listener) => {/* ... */},
+    removeListener: (eventName, listener) => {/* ... */},
+    dispatch: (eventName, payload) => {
+      const message: IPCEvent = {
+        eventName,
+        payload,
+      };
+
+      // Structure and dispatch the message to the worker.
+      worker.send?.(message);
+    },
+    cleanup: () => {/* ... */},
+  };
+}
+```
+
+```ts 
+function createWorkerEventEmitter<
+  WorkerEvents extends EventMap = EventMap,
+  ThisEvents extends EventMap = EventMap,
+>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerEventEmitter<WorkerEvents, ThisEvents> {
+  // ...
+
+  return {
+    addListener: (eventName, listener) => {/* ... */},
+    removeListener: (eventName, listener) => {/* ... */},
+    dispatch: (eventName, payload) => {
+      const message: IPCEvent<ThisEvents> = {
+        eventName,
+        payload,
+      };
+
+      // Structure and dispatch the message to the worker.
+      worker.send?.(message);
+    },
+    cleanup: () => {/* ... */},
+  };
+}
+```
+
+```ts {17}
+function createWorkerEventEmitter<
+  WorkerEvents extends EventMap = EventMap,
+  ThisEvents extends EventMap = EventMap,
+>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerEventEmitter<WorkerEvents, ThisEvents> {
+  const listenerMap: EventListenerMap<WorkerEvents> = {};
+
+  const handleWorkerMessage = (message: IPCEvent<WorkerEvents>) => {/* ... */};
 
   worker.on('message', handleWorkerMessage);
 
@@ -1844,14 +1951,13 @@ function createWorkerEventEmitter<Map extends EventMap>(
 ```
 
 ```ts
-function createWorkerEventEmitter<Map extends EventMap>(
+function createWorkerEventEmitter<
+  WorkerEvents extends EventMap = EventMap,
+  ThisEvents extends EventMap = EventMap,
+>(
   worker: ChildProcess | NodeJS.Process
-): WorkerEventEmitter<Map> {
-  const listenerMap: EventListenerMap<Map> = {};
-
-  const handleWorkerMessage = (message: IPCEvent<Map>) => {/* ... */};
-
-  worker.on('message', handleWorkerMessage);
+): WorkerEventEmitter<WorkerEvents, ThisEvents> {
+  // ...
 
   return {
     addListener: (eventName, listener) => {/* ... */},
@@ -1871,14 +1977,13 @@ function createWorkerEventEmitter<Map extends EventMap>(
 ```
 
 ```ts
-function createWorkerEventEmitter<Map extends EventMap>(
+function createWorkerEventEmitter<
+  WorkerEvents extends EventMap = EventMap,
+  ThisEvents extends EventMap = EventMap,
+>(
   worker: ChildProcess | NodeJS.Process
-): WorkerEventEmitter<Map> {
-  const listenerMap: EventListenerMap<Map> = {};
-
-  const handleWorkerMessage = (message: IPCEvent<Map>) => {/* ... */};
-
-  worker.on('message', handleWorkerMessage);
+): WorkerEventEmitter<WorkerEvents, ThisEvents> {
+  // ...
 
   return {
     addListener: (eventName, listener) => {/* ... */},
@@ -1890,7 +1995,7 @@ function createWorkerEventEmitter<Map extends EventMap>(
 
       // Remove all saved listeners so everything can be cleaned up.
       for (const eventName of Object.keys(listenerMap)) {
-        listenerMap[eventName as EventName<Map>]?.clear();
+        listenerMap[eventName as EventName<WorkerEvents>]?.clear();
       }
     },
   };
@@ -1907,8 +2012,24 @@ layout: default
 
 <Transform :scale="0.95">
 
-<video muted autoplay controls>
+<video muted autoplay loop controls>
   <source src="/type-safe-events.mp4" type="video/mp4">
+  Uh oh. The video didn't work!
+</video>
+
+</Transform>
+
+---
+transition: fade
+layout: default
+---
+
+# What does all of this get us?
+
+<Transform :scale="0.95">
+
+<video muted autoplay loop controls>
+  <source src="/type-safe-dispatch.mp4" type="video/mp4">
   Uh oh. The video didn't work!
 </video>
 
@@ -1970,8 +2091,53 @@ layout: default
 
 ````md magic-move
 ```ts
+// Message schema for main process -> sub process message with numbers to add.
+interface AddNumbersMsg {
+  type: 'add-numbers';
+  numbers: number[];
+}
+
+// Message schema for main process -> sub process message with numbers to subtract.
+interface SubtractNumbersMsg {
+  type: 'subtract-numbers';
+  numbers: number[];
+}
+
+// Message schema for main process -> sub process message with a result.
+interface MultiplyNumbersMsg {
+  type: 'multiply-numbers';
+  numbers: number[];
+}
+
+// Message schema for sub process -> main process message with numbers to multiply.
+interface ResultMsg {
+  type: 'result';
+  operation: 'add' | 'subtract' | 'multiply';
+  result: number;
+}
+```
+
+```ts
+interface IpcApiMap {
+  'add-numbers': (numbers: number[]) => number;
+  'subtract-numbers': (numbers: number[]) => number;
+  'multiply-numbers': (numbers: number[]) => number;
+}
+```
+
+```ts
+interface IpcApiMap {
+  'add-numbers': (numbers: number[]) => number;
+  'subtract-numbers': (numbers: number[]) => number;
+  'multiply-numbers': (numbers: number[]) => number;
+  'say-hello': (name: string) => string;
+}
+```
+
+```ts
 // Schema for IPC Call/Function messages -- this comes from the process MAKING the call.
 interface IpcRequestMessage {
+  callType: 'request';
   requestId: number;
   fnName: string;
   args: Record<string, any>;
@@ -1979,12 +2145,11 @@ interface IpcRequestMessage {
 
 // Schema for IPC call/Function results -- this comes from the process RESPONDING to the call.
 type IpcResponseMessage = {
+  callType: 'response';
   requestId: number;
-} & ({
-  result: any;
-} | {
-  error: string;
-});
+  result?: any;
+  error?: string;
+};
 ```
 
 ```ts
@@ -2000,6 +2165,7 @@ type ApiFnArgs = any;
 
 // Helper type extracting the return type of an API function.
 type ApiFnReturnType = any;
+
 ```
 
 ```ts {0-7|9-13|15-20|*}
@@ -2037,11 +2203,9 @@ interface IpcRequestMessage {
 type IpcResponseMessage = {
   callType: 'response';
   requestId: number;
-} & ({
-  result: any;
-} | {
-  error: string;
-});
+  result?: any;
+  error?: string;
+};
 ```
 
 ```ts
@@ -2060,11 +2224,9 @@ interface IpcRequestMessage<
 type IpcResponseMessage = {
   callType: 'response';
   requestId: number;
-} & ({
-  result: any;
-} | {
-  error: string;
-});
+  result?: any;
+  error?: string;
+};
 ```
 
 ```ts
@@ -2080,17 +2242,15 @@ interface IpcRequestMessage<
 }
 
 // Schema for IPC call/Function results -- this comes from the process RESPONDING to the call.
-export type IpcResponseMessage<
+type IpcResponseMessage<
   Map extends ApiMap,
   ApiName extends ApiFnName<Map> = ApiFnName<Map>,
 > = {
   callType: 'response';
   requestId: number;
-} & ({
-  result: ApiFnReturnType<Map, ApiName>;
-} | {
-  error: string;
-});
+  result?: ApiFnReturnType<Map, ApiName>;
+  error?: string;
+};
 ```
 ````
 
@@ -2110,28 +2270,40 @@ layout: default
 
 # Making a new IPC API
 
-<v-clicks>
-
-- We only need one API because the 'implementation' of an API should always exist.
-- As in, it should be a part of the 'creation' of the API.
-
-</v-clicks>
-
 ````md magic-move
 ```ts
 // Base IPC Call API.
 interface WorkerIpcApi {
   callIpcFunction(fnName: string, args: any): Promise<any>;
+  registerIpcHandler(fnName: Fn, handler: (...args: any) => any): void;
+  cleanup(): void;
 }
 ```
 
 ```ts
 // Base IPC Call API.
-export interface WorkerIpcApi<Map extends ApiMap> {
-  callIpcFunction<Fn extends ApiFnName<Map> = ApiFnName<Map>>(
+interface WorkerIpcApi<WorkerApi extends ApiMap, ThisApi extends ApiMap> {
+  callIpcFunction<Fn extends ApiFnName<WorkerApi> = ApiFnName<WorkerApi>>(
     fnName: Fn,
-    args: ApiFnArgs<Map, Fn>
-  ): Promise<ApiFnReturnType<Map, Fn>>;
+    ...args: ApiFnArgs<WorkerApi, Fn>
+  ): Promise<ApiFnReturnType<WorkerApi, Fn>>;
+  registerIpcHandler(fnName: Fn, handler: (...args: any) => any): void;
+  cleanup(): void;
+}
+```
+
+```ts
+// Base IPC Call API.
+interface WorkerIpcApi<WorkerApi extends ApiMap, ThisApi extends ApiMap> {
+  callIpcFunction<Fn extends ApiFnName<WorkerApi> = ApiFnName<WorkerApi>>(
+    fnName: Fn,
+    ...args: ApiFnArgs<WorkerApi, Fn>
+  ): Promise<ApiFnReturnType<WorkerApi, Fn>>;
+  registerIpcHandler<Fn extends ApiFnName<ThisApi> = ApiFnName<ThisApi>>(
+    fnName: Fn,
+    handler: ApiFnSignature<ThisApi, Fn>,
+  ): void;
+  cleanup(): void;
 }
 ```
 ````
@@ -2146,23 +2318,665 @@ layout: default
 # Making a new IPC API
 
 ````md magic-move
-```ts
-// Base IPC Call API.
-interface WorkerIpcApi {
-  callIpcFunction(fnName: string, args: any): Promise<any>;
+```ts {*|10}
+export function createWorkerIpcApi<WorkerApi extends ApiMap = ApiMap, ThisApi extends ApiMap = ApiMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerIpcApi<WorkerApi, ThisApi> {
+  
+  const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {};
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    callIpcFunction: (fnName, ...args) => {},
+    registerIpcHandler: (fnName, handler) => {},
+    cleanup: () => {},
+  };
 }
 ```
 
 ```ts
-// Base IPC Call API.
-export interface WorkerIpcApi<Map extends ApiMap> {
-  callIpcFunction<Fn extends ApiFnName<Map> = ApiFnName<Map>>(
-    fnName: Fn,
-    args: ApiFnArgs<Map, Fn>
-  ): Promise<ApiFnReturnType<Map, Fn>>;
+export function createWorkerIpcApi<WorkerApi extends ApiMap = ApiMap, ThisApi extends ApiMap = ApiMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerIpcApi<WorkerApi, ThisApi> {
+  let idCounter = 0;
+
+  const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {};
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    callIpcFunction: (fnName, ...args) => {},
+    registerIpcHandler: (fnName, handler) => {},
+    cleanup: () => {},
+  };
+}
+```
+
+```ts
+let idCounter = 0;
+
+return {
+  callIpcFunction: (fnName, ...args) => {
+    // Create our request.
+    const request: IpcRequestMessage<WorkerApi> = {
+      callType: 'request',
+      fnName,
+      args,
+      requestId: idCounter++,
+    };
+
+    // Send the request to the other process.
+    worker.send?.(request); 
+  },
+};
+```
+
+```ts
+let idCounter = 0;
+
+return {
+  callIpcFunction: (fnName, ...args) => {
+    // Create our request.
+    const request: IpcRequestMessage<WorkerApi> = {
+      callType: 'request',
+      fnName,
+      args,
+      requestId: idCounter++,
+    };
+
+    // Create a promise that we can externally resolve and cache the resolver.
+    const promiseWithResolvers = Promise.withResolvers<ApiFnReturnType<WorkerApi>>();
+
+    // Send the request to the other process.
+    worker.send?.(request); 
+
+    return promiseWithResolvers.promise;
+  },
+};
+```
+
+```ts
+const waitingRequests = new Map<number, PromiseWithResolvers<ApiFnReturnType<WorkerApi>>();
+let idCounter = 0;
+
+return {
+  callIpcFunction: (fnName, ...args) => {
+    // Create our request.
+    const request: IpcRequestMessage<WorkerApi> = {
+      callType: 'request',
+      fnName,
+      args,
+      requestId: idCounter++,
+    };
+
+    // Create a promise that we can externally resolve and cache the resolver.
+    const promiseWithResolvers = Promise.withResolvers<ApiFnReturnType<WorkerApi>>();
+
+    // Send the request to the other process.
+    worker.send?.(request); 
+
+    return promiseWithResolvers.promise;
+  },
+};
+```
+
+```ts
+const waitingRequests = new Map<number, PromiseWithResolvers<ApiFnReturnType<WorkerApi>>();
+let idCounter = 0;
+
+return {
+  callIpcFunction: (fnName, ...args) => {
+    // Create our request.
+    const request: IpcRequestMessage<WorkerApi> = {
+      callType: 'request',
+      fnName,
+      args,
+      requestId: idCounter++,
+    };
+
+    // Create a promise that we can externally resolve and cache the resolver.
+    const promiseWithResolvers = Promise.withResolvers<ApiFnReturnType<WorkerApi>>();
+    waitingRequests.set(request.requestId, promiseWithResolvers);
+
+    // Send the request to the other process.
+    worker.send?.(request); 
+
+    return promiseWithResolvers.promise;
+  },
+};
+```
+
+```ts {*|7-8}
+export function createWorkerIpcApi<WorkerApi extends ApiMap = ApiMap, ThisApi extends ApiMap = ApiMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerIpcApi<WorkerApi, ThisApi> {
+  const waitingRequests = new Map<number, PromiseWithResolvers<ApiFnReturnType<WorkerApi>>();
+  let idCounter = 0;
+
+  const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {};
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    callIpcFunction: (fnName, ...args) => {/* ... */},
+    registerIpcHandler: (fnName, handler) => {},
+    cleanup: () => {},
+  };
+}
+```
+
+```ts
+const waitingRequests = new Map<number, PromiseWithResolvers<ApiFnReturnType<WorkerApi>>();
+
+const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {
+  // ...
+};
+```
+
+```ts
+const waitingRequests = new Map<number, PromiseWithResolvers<ApiFnReturnType<WorkerApi>>();
+
+const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {
+  // Ignore irrelevant messages.
+  if (typeof message.requestId === 'undefined' || typeof message.callType === 'undefined') {
+    return;
+  }
+
+  // Handle incoming IPC call responses.
+  if (message.callType === 'response') {
+    // ...
+  }
+};
+```
+
+```ts
+const waitingRequests = new Map<number, PromiseWithResolvers<ApiFnReturnType<WorkerApi>>();
+
+const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {
+  // ...
+
+  // Handle incoming IPC call responses.
+  if (message.callType === 'response') {
+    // Retrieve the promise. If there is none, we have an ID mismatch and ignore.
+    const promise = waitingRequests.get(response.requestId);
+    if (!promise) return;
+
+    // Remove the request from our map since it is being handled.
+    waitingRequests.delete(response.requestId);
+  }
+};
+```
+
+```ts
+const waitingRequests = new Map<number, PromiseWithResolvers<ApiFnReturnType<WorkerApi>>();
+
+const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {
+  // ...
+
+  // Handle incoming IPC call responses.
+  if (message.callType === 'response') {
+    // Retrieve the promise. If there is none, we have an ID mismatch and ignore.
+    const promise = waitingRequests.get(response.requestId);
+    if (!promise) return;
+
+    // Remove the request from our map since it is being handled.
+    waitingRequests.delete(response.requestId);
+
+    // If we have a result, resolve the promise with it. Otherwise, reject the promise.
+    if (typeof response.result !== 'undefined') {
+      promise.resolve(response.result);
+    } else {
+      promise.reject(response.error ?? 'Invalid response from other process.');
+    }
+  }
+};
+```
+
+```ts {*|12}
+export function createWorkerIpcApi<WorkerApi extends ApiMap = ApiMap, ThisApi extends ApiMap = ApiMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerIpcApi<WorkerApi, ThisApi> {
+  const waitingRequests = new Map<number, PromiseWithResolvers<ApiFnReturnType<WorkerApi>>();
+  let idCounter = 0;
+
+  const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {/* ... */};
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    callIpcFunction: (fnName, ...args) => {/* ... */},
+    registerIpcHandler: (fnName, handler) => {},
+    cleanup: () => {},
+  };
+}
+```
+
+```ts
+type EventListenerMap<Map extends EventMap> = {
+  [Event in keyof Map]?: Set<EventListenerCb<Map, Event>>;
+};
+```
+
+```ts
+type ApiHandlerMap<Map extends ApiMap> = {
+  [Event in keyof Map]?: Set<EventListenerCb<Map, Event>>;
+};
+```
+
+```ts
+type ApiHandlerMap<Map extends ApiMap> = {
+  [Fn in keyof Map]?: ApiFnSignature<Map, Fn>;
+};
+```
+
+```ts {5,13-16|*}
+export function createWorkerIpcApi<WorkerApi extends ApiMap = ApiMap, ThisApi extends ApiMap = ApiMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerIpcApi<WorkerApi, ThisApi> {
+  const waitingRequests = new Map<number, PromiseWithResolvers<ApiFnReturnType<WorkerApi>>();
+  const apiHandlers: ApiHandlerMap<ThisApi> = {};
+  let idCounter = 0;
+
+  const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {/* ... */};
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    callIpcFunction: (fnName, ...args) => {/* ... */},
+    registerIpcHandler: (fnName, handler) => {
+      // Add the handler for the given function within our handler map.
+      apiHandlers[fnName] = handler;
+    },
+    cleanup: () => {},
+  };
 }
 ```
 ````
 
--- REDO THIS LAST SECTION. THE TYPES WERE FUCKED AND I HAD TO REDO THEM. --
--- ALSO UPDATE EVENT SETUP TO ALSO HAVE THE WorkerEvents, ThisEvents PARADIGM!!! --
+---
+transition: fade
+layout: statement
+---
+
+# Deep breath break.
+
+I promise we are almost there, and it's worth it.
+
+---
+transition: fade
+layout: default
+---
+
+
+<div class="section-label">Tracking IPC calls</div>
+
+# Hooking up IPC handlers
+
+````md magic-move
+```ts {*|8}
+export function createWorkerIpcApi<WorkerApi extends ApiMap = ApiMap, ThisApi extends ApiMap = ApiMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerIpcApi<WorkerApi, ThisApi> {
+  const waitingRequests = new Map<number, PromiseWithResolvers<ApiFnReturnType<WorkerApi>>();
+  const apiHandlers: ApiHandlerMap<ThisApi> = {};
+  let idCounter = 0;
+
+  const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {/* ... */};
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    callIpcFunction: (fnName, ...args) => {/* ... */},
+    registerIpcHandler: (fnName, handler) => {
+      // Add the handler for the given function within our handler map.
+      apiHandlers[fnName] = handler;
+    },
+    cleanup: () => {},
+  };
+}
+```
+
+```ts
+const apiHandlers: ApiHandlerMap<ThisApi> = {};
+
+const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {
+  // Ignore irrelevant messages.
+  if (typeof message.requestId === 'undefined' || typeof message.callType === 'undefined') {
+    return;
+  }
+
+  // Handle incoming IPC call responses.
+  if (message.callType === 'response') {
+    // ...
+  }
+};
+```
+
+```ts
+const apiHandlers: ApiHandlerMap<ThisApi> = {};
+
+const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {
+  // Ignore irrelevant messages.
+  if (typeof message.requestId === 'undefined' || typeof message.callType === 'undefined') {
+    return;
+  }
+
+  // Handle incoming IPC call responses.
+  if (message.callType === 'response') {
+    // ...
+  } else if (message.callType === 'request') {
+    // ...
+  }
+};
+```
+
+```ts
+const apiHandlers: ApiHandlerMap<ThisApi> = {};
+
+const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {
+  // ...
+  if (message.callType === 'request') {
+    // ...
+  }
+};
+```
+
+```ts
+const apiHandlers: ApiHandlerMap<ThisApi> = {};
+
+const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {
+  // ...
+  if (message.callType === 'request') {
+    // Create our base response.
+    const response: Partial<IpcResponseMessage<ThisApi>> = {
+      callType: 'response',
+      requestId: request.requestId,
+    };
+  }
+};
+```
+
+```ts
+const apiHandlers: ApiHandlerMap<ThisApi> = {};
+
+const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {
+  // ...
+  if (message.callType === 'request') {
+    const response: Partial<IpcResponseMessage<ThisApi>> = {
+      callType: 'response',
+      requestId: request.requestId,
+    };
+
+    try {
+
+    } catch (err) {
+      // If there was an error, make sure we surface it in the response.
+      response.error = JSON.stringify(err);
+      worker.send?.(response);
+    }
+  }
+};
+```
+
+```ts
+const apiHandlers: ApiHandlerMap<ThisApi> = {};
+
+const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {
+  // ...
+  if (message.callType === 'request') {
+    const response: Partial<IpcResponseMessage<ThisApi>> = {/* ... */};
+
+    try {
+      // Attempt to retrieve a handler for this function.
+      // If it does not exist, throw an error.
+      const handler = apiHandlers[request.fnName];
+      if (!handler) throw new Error(`No API Handler defined for ${request.fnName.toString()}`);
+
+    } catch (err) {
+      response.error = JSON.stringify(err);
+      worker.send?.(response);
+    }
+  }
+};
+```
+
+```ts
+const apiHandlers: ApiHandlerMap<ThisApi> = {};
+
+const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {
+  // ...
+  if (message.callType === 'request') {
+    const response: Partial<IpcResponseMessage<ThisApi>> = {/* ... */};
+
+    try {
+      // Attempt to retrieve a handler for this function.
+      // If it does not exist, throw an error.
+      const handler = apiHandlers[request.fnName];
+      if (!handler) throw new Error(`No API Handler defined for ${request.fnName.toString()}`);
+
+      // Store the result of calling the handler with the args in the response.
+      response.result = handler(...request.args);
+      worker.send?.(response);
+    } catch (err) {
+      response.error = JSON.stringify(err);
+      worker.send?.(response);
+    }
+  }
+};
+```
+
+```ts {14}
+export function createWorkerIpcApi<WorkerApi extends ApiMap = ApiMap, ThisApi extends ApiMap = ApiMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerIpcApi<WorkerApi, ThisApi> {
+  const waitingRequests = new Map<number, PromiseWithResolvers<ApiFnReturnType<WorkerApi>>();
+  const apiHandlers: ApiHandlerMap<ThisApi> = {};
+  let idCounter = 0;
+
+  const handleWorkerMessage = (message: IpcResponseMessage<WorkerApi> | IpcRequestMessage<ThisApi>) => {/* ... */};
+  worker.on('message', handleWorkerMessage);
+
+  return {
+    callIpcFunction: (fnName, ...args) => {/* ... */},
+    registerIpcHandler: (fnName, handler) => {/* ... */},
+    cleanup: () => {},
+  };
+}
+```
+
+```ts
+export function createWorkerIpcApi<WorkerApi extends ApiMap = ApiMap, ThisApi extends ApiMap = ApiMap>(
+  worker: ChildProcess | NodeJS.Process
+): WorkerIpcApi<WorkerApi, ThisApi> {
+  const waitingRequests = new Map<number, PromiseWithResolvers<ApiFnReturnType<WorkerApi>>();
+  // ...
+
+  return {
+    callIpcFunction: (fnName, ...args) => {/* ... */},
+    registerIpcHandler: (fnName, handler) => {/* ... */},
+    cleanup: () => {
+      // Remove our message handler.
+      worker.off('message', handleWorkerMessage);
+
+      // Reject any existing requests that are waiting for a response.
+      waitingRequests.forEach((promise) => {
+        promise.reject('IPC Handler closing');
+      });
+      waitingRequests.clear();
+    },
+  };
+}
+```
+````
+
+---
+transition: fade
+layout: statement
+---
+
+# "Please stop"
+
+Don't worry, we're done
+
+---
+transition: fade
+layout: two-code-blocks
+---
+
+# What are we left with?
+
+::left::
+
+<div class="code-block-header font-mono">
+  main.ts
+</div>
+
+```ts
+import { fork } from 'node:child_process';
+
+// Create a sub-process for the heavy task.
+const taskProcess = fork('./add.js');
+
+// Add a listener for the result of the task.
+taskProcess.on('message', (message: AddResultMsg | WorkerMetricsMsg) => {
+  if (message.type === 'result') {
+    console.log(`Result: ${message.result}`);
+  } else if (message.type === 'worker-metrics') {
+    console.log(
+      `Worker uptime: ${message.uptime},`,
+      `\n${message.totalCalculations} performed.`
+    );
+  }
+});
+
+// Send a message to the sub-process to start the task.
+taskProcess.send({
+  type: 'add-numbers',
+  numbers: [5, 10],
+} as AddNumbersMsg);
+```
+
+::right::
+
+<div class="code-block-header font-mono">
+  add.ts
+</div>
+
+```ts 
+// Listen for a message from the main process.
+process.on(
+  'message',
+  (message: AddNumbersMsg) => {
+    // Add the numbers together
+    const result = message.numbers.reduce(
+      (total, curr) => total + curr,
+      0,
+    );
+
+    // Send the result back to the main process.
+    process.send({
+      type: 'add-numbers:result',
+      result,
+    } as AddResultMsg);
+    totalCalculations++;
+  },
+);
+```
+
+---
+transition: fade
+layout: two-code-blocks
+---
+
+# What are we left with?
+
+::left::
+
+<div class="code-block-header font-mono">
+  main.ts
+</div>
+
+```ts
+import { fork } from 'node:child_process';
+
+// Create a sub-process for the heavy task.
+const taskProcess = fork('./add.js');
+const ipcEvents = createWorkerEventEmitter<IpcEventMap>(taskProcess);
+const ipcApi = createWorkerIpcApi<IpcApiMap>(taskProcess);
+
+ipcEvents.addListener('worker-metrics', ({ payload }) => {
+  console.log(
+    `Worker uptime: ${message.uptime},`,
+    `\n${message.totalCalculations} performed.`
+  );
+});
+
+const result = await ipcApi.callIpcFunction('add-numbers', [5, 10]);
+console.log(`Result is ${result}`);
+```
+
+::right::
+
+<div class="code-block-header font-mono">
+  add.ts
+</div>
+
+```ts 
+const ipcEvents = createWorkerEventEmitter<{}, IpcEventMap>(
+  process
+);
+const ipcApi = createWorkerIpcApi<{}, IpcApiMap>(process);
+let totalCalculations = 0;
+
+ipcApi.registerIpcHandler('add-numbers', (numbers) => {
+  totalCalculations++;
+  return numbers.reduce(
+    (total, curr) => total + curr,
+    0,
+  );
+});
+
+setInterval(() => {
+  ipcEvents.dispatch('worker-metrics', {
+    uptime: `${Math.floor(process.uptime())}s`,
+    totalCalculations,
+  });
+}, 60000);
+```
+
+---
+transition: fade
+layout: default
+---
+
+# What are we left with?
+
+<Transform :scale="0.95">
+
+<video muted autoplay controls>
+  <source src="/type-safe-ipc-calls.mp4" type="video/mp4">
+  Uh oh. The video didn't work!
+</video>
+
+</Transform>
+
+---
+transition: fade
+layout: default
+---
+
+# Let's wrap up
+
+<v-clicks>
+
+- IPC is hard.
+- TypeScript is hard.
+- Putting some focus on establishing strict typing building blocks can make iterating on and maintaining your codebase way easier.
+
+</v-clicks>
+
+---
+transition: fade
+layout: default
+---
+
+# Thank you! Sorry for the Generics.
+
+- [@bengsfort](https://github.com/bengsfort) on Github.
+- This talk and an example project available at [bengsfort/ipc-talk](https://github.com/bengsfort/ipc-talk)
+- Will be available at [ipc.bengsfort.dev](https://ipc.bengsfort.dev/) at some point :)

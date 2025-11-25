@@ -75,6 +75,10 @@
   &.full-code {
     padding: 0;
   }
+
+  &.two-code-blocks {
+    padding: 0;
+  }
 }
 
 .section-label {

@@ -31,13 +31,13 @@ ipcApi.registerIpcHandler('subtract-numbers', (numbers) => {
 });
 
 ipcApi.registerIpcHandler('say-hello', (name) => {
-  totalCalculations++;
-  return `Hello, ${name}`;
+  return `Hello, ${name}!`;
 });
 
+// Trigger a message every 60s with some metrics from this worker.
 setInterval(() => {
   ipcEvents.dispatch('worker-metrics', {
     uptime: `${Math.floor(process.uptime())}s`,
     totalCalculations,
   });
-}, 6000); // Every 60s
+}, 60000);

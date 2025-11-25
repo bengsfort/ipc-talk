@@ -42,7 +42,7 @@ export interface WorkerEventEmitter<
     eventName: Event,
     listener: EventListenerCb<WorkerEvents, Event>,
   ): void;
-  dispatch<Event extends EventName<ThisEvents>>(
+  dispatch<Event extends EventName<ThisEvents> = EventName<ThisEvents>>(
     eventName: Event,
     payload: EventPayload<ThisEvents, Event>
   ): void;
@@ -55,32 +55,27 @@ export type ApiMap = object;
 
 export type ApiFnName<Map extends ApiMap> = keyof Map;
 
-export type ApiFnDefinition<
+export type ApiFnSignature<
   Map extends ApiMap,
-  ApiName extends keyof Map,
+  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
 > = Map[ApiName] extends (...args: any[]) => any
   ? Map[ApiName]
   : never;
 
 export type ApiFnArgs<
   Map extends ApiMap,
-  ApiName extends keyof Map,
-> = Parameters<ApiFnDefinition<Map, ApiName>>
+  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
+> = Parameters<ApiFnSignature<Map, ApiName>>;
 
 export type ApiFnReturnType<
   Map extends ApiMap,
-  ApiName extends keyof Map = keyof Map,
-> = ReturnType<ApiFnDefinition<Map, ApiName>>
-
-export type ApiFnSignature<
-  Map extends ApiMap,
-  ApiName extends keyof Map = keyof Map,
-> = (args: ApiFnArgs<Map, ApiName>) => ApiFnReturnType<Map, ApiName>;
+  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
+> = ReturnType<ApiFnSignature<Map, ApiName>>;
 
 // Schema for IPC Call/Function messages -- this comes from the process MAKING the call.
 export interface IpcRequestMessage<
   Map extends ApiMap,
-  ApiName extends keyof Map = keyof Map,
+  ApiName extends ApiFnName<Map> = ApiFnName<Map>,
 > {
   callType: 'request';
   requestId: number;
@@ -99,13 +94,8 @@ export type IpcResponseMessage<
   error?: string;
 };
 
-export type ApiRequestHandler<
-  Map extends ApiMap,
-  Fn extends ApiFnName<Map> = ApiFnName<Map>
-> = (...request: ApiFnArgs<Map, Fn>) => ApiFnReturnType<Map, Fn> | undefined;
-
 export type ApiHandlerMap<Map extends ApiMap> = {
-  [Fn in keyof Map]?: ApiRequestHandler<Map, Fn>;
+  [Fn in keyof Map]?: ApiFnSignature<Map, Fn>;
 };
 
 /**
@@ -118,7 +108,7 @@ export interface WorkerIpcApi<WorkerApi extends ApiMap, ThisApi extends ApiMap> 
   ): Promise<ApiFnReturnType<WorkerApi, Fn>>;
   registerIpcHandler<Fn extends ApiFnName<ThisApi> = ApiFnName<ThisApi>>(
     fnName: Fn,
-    handler: ApiRequestHandler<ThisApi, Fn>,
+    handler: ApiFnSignature<ThisApi, Fn>,
   ): void;
   cleanup(): void;
 }

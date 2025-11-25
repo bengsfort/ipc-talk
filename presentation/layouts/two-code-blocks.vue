@@ -6,7 +6,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div class="slidev-layout two-cols-header w-full h-full" :class="props.layoutClass">
+  <div class="slidev-layout two-code-blocks two-cols-header w-full h-full" :class="props.layoutClass">
     <div class="col-header">
       <slot />
     </div>

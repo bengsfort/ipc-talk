@@ -14,14 +14,9 @@ const taskProcess = fork(taskPath);
 const ipcEvents = createWorkerEventEmitter<IpcEventMap>(taskProcess);
 const ipcApi = createWorkerIpcApi<IpcApiMap>(taskProcess);
 
-ipcEvents.addListener('result', (event) => {
-  console.log(`Result: ${event.payload}`);
+ipcEvents.addListener('worker-metrics', ({ payload }) => {
+  console.log(`Uptime: ${payload.uptime}\nTotal operations: ${payload.totalCalculations}`);
 });
 
-ipcEvents.addListener('worker-metrics', (event) => {
-  console.log(`Uptime: ${event.payload.uptime}`);
-});
-
-const result = await ipcApi.callIpcFunction('add-numbers', [5, 10]);
-
-console.log(`Result is: ${result}`);
+const greeting = await ipcApi.callIpcFunction('say-hello', 'Bob');
+console.log(`Got greeting from other process: ${greeting}`);
