@@ -20,14 +20,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Change CWD
+        run: cd ./presentation
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           run_install: false
-
-      - name: Change CWD
-        run: cd ./presentation
 
       - uses: actions/setup-node@v4
         with:
